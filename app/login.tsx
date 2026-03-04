@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  TextInput, 
-  TouchableOpacity, 
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
-  StatusBar
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 const COLORS = {
   primary: '#3E2723',   // dark brown primary color
@@ -27,8 +27,8 @@ export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // State for password visibility
 
-  
   const handleLogin = () => {
     // email check by regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.com$/i;
@@ -43,7 +43,6 @@ export default function LoginScreen() {
       return;
     }
 
-    
     console.log('Giriş Başarılı, Email:', email);
     // router.push add later to navigation
   };
@@ -89,14 +88,23 @@ export default function LoginScreen() {
           {/* HATA MESAJI GÖSTERİMİ */}
           {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
+          {/* ŞİFRE INPUTU */}
           <View style={styles.inputContainer}>
             <Ionicons name="lock-closed-outline" size={20} color={COLORS.textLight} style={styles.icon} />
             <TextInput 
               style={styles.input}
               placeholder="Şifreniz"
               placeholderTextColor={COLORS.textLight}
-              secureTextEntry
+              secureTextEntry={!showPassword} // Toggle visibility
             />
+            {/* GÖZ İKONU BUTONU */}
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons 
+                name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                size={22} 
+                color={COLORS.textLight} 
+              />
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.forgotPasswordContainer}>
@@ -113,7 +121,7 @@ export default function LoginScreen() {
 
         <View style={styles.footerContainer}>
           <Text style={styles.footerText}>Hesabınız yok mu? </Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.replace('/signup')}>
             <Text style={styles.footerLink}>Hemen Kayıt Ol</Text>
           </TouchableOpacity>
         </View>
