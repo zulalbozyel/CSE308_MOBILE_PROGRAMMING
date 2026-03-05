@@ -189,7 +189,7 @@ export default function HomeScreen() {
       <View style={styles.navBar}>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push("/")}
+          onPress={() => router.push("/home")}
         >
           <Ionicons name="home" size={22} color={COLORS.primary} />
           <Text style={styles.navText}>Ana Sayfa</Text>
@@ -197,7 +197,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push("/orders")}
+          onPress={() => router.push("/menu")}
         >
           <Ionicons name="book-outline" size={22} color={COLORS.textLight} />
           <Text style={styles.navText}>Menü</Text>
@@ -205,7 +205,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.navItem}
-          // onPress={() => router.push("/(tabs)")}
+          onPress={() => router.push("/orders")}
         >
           <Ionicons name="receipt-outline" size={22} color={COLORS.textLight} />
           <Text style={styles.navText}>Siparişlerim</Text>

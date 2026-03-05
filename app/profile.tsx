@@ -1,12 +1,13 @@
+
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 const COLORS = {

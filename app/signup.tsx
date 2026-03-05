@@ -37,8 +37,11 @@ export default function SignUpScreen() {
       alert("Passwords do not match!");
       return;
     }
+    
     console.log('Sign Up Data:', { fullName, email, password });
-    // I will add the router push here later
+    
+    // Doğru Yönlendirme Kodu:
+    router.push('/home');
   };
 
   return (

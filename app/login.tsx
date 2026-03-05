@@ -43,7 +43,10 @@ export default function LoginScreen() {
       return;
     }
 
-    router.replace("/home");
+
+
+    router.push("/home");
+
   };
 
   return (
