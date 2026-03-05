@@ -29,9 +29,10 @@ const COLORS = {
 };
 
 // --- MOCK DATALAR (Sunum için) ---
+// --- MOCK DATALAR (Sunum için) ---
 const branches = [
-  { id: 1, name: "Merkez", distance: "0.8 km", status: "Açık", latitude: 37.8716, longitude: 32.4846 },
-  { id: 2, name: "Kadıköy", distance: "3.2 km", status: "Kapalı", latitude: 37.874, longitude: 32.493 },
+  { id: 1, name: "Teknokent", distance: "0.2 km", status: "Açık", latitude: 36.8987, longitude: 30.6454 },
+  { id: 2, name: "Kaleiçi", distance: "5.1 km", status: "Kapalı", latitude: 36.8850, longitude: 30.7040 },
 ];
 
 const SUGGESTIONS = [
@@ -48,15 +49,17 @@ const CAMPAIGNS = [
 export default function HomeScreen() {
   const router = useRouter();
   
-  // Kamera State
+  // Kamera State'leri
   const [showScanner, setShowScanner] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [torch, setTorch] = useState(false); // Flaş (Torch) durumu
 
   const handleBarcodeScanned = ({ type, data }: any) => {
     setScanned(true);
     alert(`QR İçerik: ${data}`);
     setShowScanner(false);
+    setTorch(false); // Tarama bitince flaşı kapat
   };
 
   const openMap = (latitude: number, longitude: number, label: string) => {
@@ -71,7 +74,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
-      {/* HEADER - Çentik/Durum Çubuğu Düzeltmesi Eklendi */}
+      {/* HEADER */}
       <View style={styles.header}>
         <View>
           <Text style={styles.greetingText}>Günaydın, Elif! ☕</Text>
@@ -93,8 +96,10 @@ export default function HomeScreen() {
             <MapView
               style={styles.map}
               initialRegion={{
-                latitude: 37.8716, longitude: 32.4846,
-                latitudeDelta: 0.03, longitudeDelta: 0.03,
+                latitude: 36.8900, 
+                longitude: 30.6700,
+                latitudeDelta: 0.08, 
+                longitudeDelta: 0.08,
               }}
             >
               {branches.map((branch) => (
@@ -143,7 +148,6 @@ export default function HomeScreen() {
               <Text style={styles.walletLabel}>Cüzdan Bakiyesi</Text>
               <Text style={styles.walletAmount}>120.50 TL</Text>
             </View>
-            
           </View>
           <View style={styles.walletActions}>
             <TouchableOpacity style={styles.actionBtn}>
@@ -194,6 +198,7 @@ export default function HomeScreen() {
         onPress={async () => {
           if (!permission?.granted) await requestPermission();
           setScanned(false);
+          setTorch(false);
           setShowScanner(true);
         }}
       >
@@ -208,18 +213,55 @@ export default function HomeScreen() {
         <NavItem icon="person-outline" label="Profil" onPress={() => router.push("/profile")} active={false} />
       </View>
 
-      {/* CAMERA OVERLAY */}
+      {/* 🚀 MODERN QR SCANNER OVERLAY */}
       {showScanner && (
         <View style={styles.scannerContainer}>
           <CameraView
             style={StyleSheet.absoluteFillObject}
             facing="back"
+            enableTorch={torch} // Flaş kontrolü
             barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
             onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
-          />
-          <TouchableOpacity style={styles.closeScanner} onPress={() => setShowScanner(false)}>
-            <Text style={{ color: "#fff", fontWeight: "bold" }}>Kapat</Text>
-          </TouchableOpacity>
+          >
+            {/* Karartılmış Arka Plan */}
+            <View style={styles.layerTop} />
+            <View style={styles.layerCenter}>
+              <View style={styles.layerLeft} />
+              
+              {/* Odak Izgarası (Viewfinder) */}
+              <View style={styles.focusedArea}>
+                <View style={[styles.corner, styles.topLeft]} />
+                <View style={[styles.corner, styles.topRight]} />
+                <View style={[styles.corner, styles.bottomLeft]} />
+                <View style={[styles.corner, styles.bottomRight]} />
+              </View>
+
+              <View style={styles.layerRight} />
+            </View>
+            <View style={styles.layerBottom}>
+              <Text style={styles.scanText}>Puan kazanmak için QR kodu okutun</Text>
+              
+              {/* Kamera Kontrol Butonları */}
+              <View style={styles.cameraControls}>
+                <TouchableOpacity 
+                  style={styles.iconButton} 
+                  onPress={() => setTorch(!torch)}
+                >
+                  <Ionicons name={torch ? "flash" : "flash-off"} size={28} color="#FFF" />
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.closeScannerModern} 
+                  onPress={() => {
+                    setShowScanner(false);
+                    setTorch(false);
+                  }}
+                >
+                  <Ionicons name="close" size={32} color="#FFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </CameraView>
         </View>
       )}
     </SafeAreaView>
@@ -243,7 +285,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between", 
     alignItems: "center", 
     padding: 20, 
-    // Android için status bar boşluğunu dinamik ayarlıyoruz
     paddingTop: Platform.OS === 'android' ? 45 : 10 
   },
   greetingText: { fontSize: 14, color: COLORS.textLight, marginBottom: 4 },
@@ -255,7 +296,6 @@ const styles = StyleSheet.create({
   walletRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   walletLabel: { color: "rgba(255,255,255,0.7)", fontSize: 13, marginBottom: 4 },
   walletAmount: { color: COLORS.accent, fontSize: 26, fontWeight: "900" },
-  pointsAmount: { color: "#FFF", fontSize: 20, fontWeight: "800" },
   walletActions: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
   actionBtn: { flex: 1, flexDirection: "row", backgroundColor: COLORS.accent, paddingVertical: 10, borderRadius: 12, justifyContent: "center", alignItems: "center" },
   actionBtnText: { color: COLORS.primary, fontWeight: "700", marginLeft: 6, fontSize: 13 },
@@ -281,7 +321,6 @@ const styles = StyleSheet.create({
   branchName: { fontSize: 15, fontWeight: "700", color: COLORS.textDark, marginBottom: 4 },
   branchDist: { fontSize: 13, color: COLORS.textLight },
   
-  // Şube kartı içindeki butonlar için yeni stiller
   branchActions: { flexDirection: "row", alignItems: "center", gap: 10 },
   menuBtn: { backgroundColor: COLORS.accent, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, justifyContent: "center", alignItems: "center" },
   menuBtnText: { color: COLORS.primary, fontWeight: "700", fontSize: 12 },
@@ -293,6 +332,25 @@ const styles = StyleSheet.create({
   navItem: { alignItems: "center" },
   navText: { fontSize: 12, marginTop: 4 },
 
+  // --- MODERN QR SCANNER STYLES ---
   scannerContainer: { ...StyleSheet.absoluteFillObject, backgroundColor: "black", zIndex: 999 },
-  closeScanner: { position: "absolute", bottom: 50, alignSelf: "center", backgroundColor: "rgba(0,0,0,0.6)", paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 },
+  layerTop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" },
+  layerCenter: { flexDirection: "row" },
+  layerLeft: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" },
+  focusedArea: { width: 250, height: 250, backgroundColor: "transparent" },
+  layerRight: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" },
+  layerBottom: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", paddingTop: 30 },
+  
+  // Viewfinder (Odak Izgarası Köşeleri)
+  corner: { position: "absolute", width: 40, height: 40, borderColor: COLORS.accent },
+  topLeft: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 20 },
+  topRight: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 20 },
+  bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 20 },
+  bottomRight: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 20 },
+  
+  scanText: { color: "#FFF", fontSize: 16, fontWeight: "600", marginBottom: 40 },
+  
+  cameraControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: 250 },
+  iconButton: { width: 60, height: 60, borderRadius: 30, backgroundColor: "rgba(255,255,255,0.2)", justifyContent: "center", alignItems: "center" },
+  closeScannerModern: { width: 70, height: 70, borderRadius: 35, backgroundColor: COLORS.error, justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
 });
