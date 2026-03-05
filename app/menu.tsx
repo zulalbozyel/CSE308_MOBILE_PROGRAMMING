@@ -206,9 +206,13 @@ export default function MenuScreen() {
         <NavItem
           icon="home-outline"
           label="Ana Sayfa"
-          onPress={() => router.push("/")}
+          onPress={() => router.push("/home")}
         />
-        <NavItem icon="restaurant-outline" label="Menü" />
+        <NavItem 
+          icon="restaurant-outline" 
+          label="Menü"
+          onPress={() => router.push("/menu")}
+        />
         <NavItem
           icon="receipt-outline"
           label="Siparişlerim"
