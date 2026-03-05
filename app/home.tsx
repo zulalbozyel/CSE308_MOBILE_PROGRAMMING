@@ -5,6 +5,8 @@ import React, { useState } from "react";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import {
   Dimensions,
+  Linking,
+  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -66,7 +68,17 @@ export default function HomeScreen() {
     alert(`QR İçerik: ${data}`);
     setShowScanner(false);
   };
-
+// Harita uygulamasına yönlendirme fonksiyonu
+  const openMap = (latitude: number, longitude: number, label: string) => {
+    const url = Platform.select({
+      ios: `maps:${latitude},${longitude}?q=${label}`,
+      android: `geo:${latitude},${longitude}?q=${latitude},${longitude}(${label})`,
+    });
+    
+    if (url) {
+      Linking.openURL(url);
+    }
+  };
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
@@ -156,13 +168,21 @@ export default function HomeScreen() {
               </View>
 
               <View style={styles.cardButtons}>
-                <TouchableOpacity style={styles.secondaryButton}>
+                {/* HARİTADA GÖSTER BUTONU */}
+                <TouchableOpacity 
+                  style={styles.secondaryButton}
+                  onPress={() => openMap(branch.latitude, branch.longitude, branch.name)}
+                >
                   <Text style={styles.secondaryButtonText}>
                     HARİTADA GÖSTER
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.secondaryButton}>
+                {/* MENÜYÜ GÖR BUTONU */}
+                <TouchableOpacity 
+                  style={styles.secondaryButton}
+onPress={() => router.push({ pathname: "/menu", params: { branchName: branch.name } })}
+                >
                   <Text style={styles.secondaryButtonText}>MENÜYÜ GÖR</Text>
                 </TouchableOpacity>
               </View>
