@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
+  Image,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -12,7 +13,6 @@ import {
   View,
 } from "react-native";
 
-
 const COLORS = {
   primary: "#3E2723",
   background: "#F5F5F5",
@@ -20,32 +20,53 @@ const COLORS = {
   textDark: "#212121",
   textLight: "#757575",
   card: "#FFFFFF",
+  inputBg: "#FFFFFF", // İşte burası eksikti, bunu ekliyoruz
 };
-
 export default function Profile() {
-  const [notifications, setNotifications] = React.useState(true);
+  const [notifications, setNotifications] = useState(true);
   const router = useRouter();
-  // alt naigasyon barı için router ekledim, diğer sayfalara geçiş yapabilmek için.
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+
+      {/* HEADER */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Profilim</Text>
+        <View style={{ width: 24 }} />
+      </View>
+
       <ScrollView
-        style={styles.container}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={styles.scrollContent}
       >
-        {/* LOYALTY PROGRAM */}
+        {/* PROFİL BİLGİLERİ */}
+        <View style={styles.profileSection}>
+          <Image 
+            source={{ uri: 'https://avatar.iran.liara.run/public/boy?username=Ash' }} // Geçici avatar resmi
+            style={styles.avatar} 
+          />
+          <View style={styles.profileInfo}>
+            <Text style={styles.name}>Ahmet Yılmaz</Text>
+            <Text style={styles.email}>ahmet.yilmaz@example.com</Text>
+            <TouchableOpacity style={styles.editButton}>
+              <Text style={styles.editButtonText}>Profili Düzenle</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* SADAKAT PROGRAMI */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Sadakat Programı</Text>
-
           <Text style={styles.loyaltyText}>10 kahve alana 1 kahve bedava!</Text>
-
           <View style={styles.loyaltyRow}>
             <TouchableOpacity style={styles.loyaltyButton}>
               <Ionicons name="star-outline" size={18} color="#fff" />
               <Text style={styles.loyaltyButtonText}>Puan Kazan</Text>
             </TouchableOpacity>
-
             <TouchableOpacity style={styles.loyaltyButton}>
               <Ionicons name="qr-code-outline" size={18} color="#fff" />
               <Text style={styles.loyaltyButtonText}>QR Göster</Text>
@@ -53,289 +74,100 @@ export default function Profile() {
           </View>
         </View>
 
-        {/* ACCOUNT SETTINGS */}
+        {/* HESAP AYARLARI */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Hesap Ayarları</Text>
-
-          <TouchableOpacity style={styles.option}>
+          <TouchableOpacity style={styles.option} onPress={() => router.push("/orders")}>
             <Ionicons name="receipt-outline" size={20} color={COLORS.primary} />
             <Text style={styles.optionText}>Sipariş Geçmişi</Text>
           </TouchableOpacity>
-
           <TouchableOpacity style={styles.option}>
             <Ionicons name="card-outline" size={20} color={COLORS.primary} />
             <Text style={styles.optionText}>Ödeme Yöntemleri</Text>
           </TouchableOpacity>
-
           <TouchableOpacity style={styles.option}>
-            <Ionicons
-              name="lock-closed-outline"
-              size={20}
-              color={COLORS.primary}
-            />
+            <Ionicons name="lock-closed-outline" size={20} color={COLORS.primary} />
             <Text style={styles.optionText}>Şifre Değiştir</Text>
           </TouchableOpacity>
         </View>
 
-        {/* APP SETTINGS */}
+        {/* UYGULAMA AYARLARI */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Uygulama ve Diğer</Text>
-
           <View style={styles.optionRow}>
             <View style={styles.optionLeft}>
-              <Ionicons
-                name="notifications-outline"
-                size={20}
-                color={COLORS.primary}
-              />
+              <Ionicons name="notifications-outline" size={20} color={COLORS.primary} />
               <Text style={styles.optionText}>Bildirim Ayarları</Text>
             </View>
-
-            <Switch value={notifications} onValueChange={setNotifications} />
-          </View>
-
-          <TouchableOpacity style={styles.option}>
-            <Ionicons
-              name="help-circle-outline"
-              size={20}
-              color={COLORS.primary}
+            <Switch
+              value={notifications}
+              onValueChange={setNotifications}
+              trackColor={{ false: "#ccc", true: COLORS.accent }}
+              thumbColor={notifications ? COLORS.primary : "#fff"}
             />
+          </View>
+          <TouchableOpacity style={styles.option}>
+            <Ionicons name="help-circle-outline" size={20} color={COLORS.primary} />
             <Text style={styles.optionText}>Yardım ve Destek</Text>
           </TouchableOpacity>
-
           <TouchableOpacity style={styles.option}>
-            <Ionicons
-              name="document-text-outline"
-              size={20}
-              color={COLORS.primary}
-            />
+            <Ionicons name="document-text-outline" size={20} color={COLORS.primary} />
             <Text style={styles.optionText}>Hak ve Şartlar</Text>
           </TouchableOpacity>
         </View>
 
-        {/* DANGER ZONE */}
+        {/* TEHLİKELİ İŞLEMLER */}
         <View style={styles.card}>
-          <TouchableOpacity style={styles.deleteButton}>
-            <Text style={styles.deleteText}>Hesap Sil</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.logoutButton}>
+          <TouchableOpacity style={styles.logoutButton} onPress={() => router.replace("/login")}>
             <Text style={styles.logoutText}>Çıkış Yap</Text>
           </TouchableOpacity>
-        </View>
-
-        <View style={{ height: 40 }} />
-
-        {/* HEADER */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push("/")}>
-            <Ionicons
-              name="arrow-back-outline"
-              size={24}
-              color={COLORS.primary}
-            />
+          <TouchableOpacity style={styles.deleteButton}>
+            <Text style={styles.deleteText}>Hesabı Sil</Text>
           </TouchableOpacity>
-
-          <Text style={styles.headerTitle}>PROFIL</Text>
-
-          <View style={{ width: 24 }} />
         </View>
+
       </ScrollView>
-      {/* NAVBAR */}
-      <View style={styles.navBar}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/")}
-        >
-          <Ionicons name="home-outline" size={22} color={COLORS.textLight} />
-          <Text style={styles.navText}>Ana Sayfa</Text>
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.navItem}
+      {/* BOTTOM NAVIGATION */}
+      <View style={styles.bottomNav}>
+        <NavItem
+          icon="home-outline"
+          label="Ana Sayfa"
+          onPress={() => router.push("/home")}
+          active={false}
+        />
+        <NavItem
+          icon="restaurant-outline"
+          label="Menü"
+          onPress={() => router.push("/menu")}
+          active={false}
+        />
+        <NavItem
+          icon="receipt-outline"
+          label="Siparişlerim"
           onPress={() => router.push("/orders")}
-        >
-          <Ionicons name="book-outline" size={22} color={COLORS.textLight} />
-          <Text style={styles.navText}>Menü</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/orders")}
-        >
-          <Ionicons name="receipt-outline" size={22} color={COLORS.textLight} />
-          <Text style={styles.navText}>Siparişlerim</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="person" size={22} color={COLORS.primary} />
-          <Text style={[styles.navText, { color: COLORS.primary }]}>
-            Profilim
-          </Text>
-        </TouchableOpacity>
+          active={false}
+        />
+        <NavItem icon="person" label="Profilim" active={true} />
       </View>
     </SafeAreaView>
   );
 }
 
+// Navigasyon componenti: Diğer sayfalardaki gibi 'active' durumunu destekler
+const NavItem = ({ icon, label, onPress, active }: any) => (
+  <TouchableOpacity style={styles.navItem} onPress={onPress}>
+    <Ionicons name={icon} size={22} color={active ? COLORS.accent : COLORS.textLight} />
+    <Text style={[styles.navText, { color: active ? COLORS.primary : COLORS.textLight, fontWeight: active ? "700" : "400" }]}>
+      {label}
+    </Text>
+  </TouchableOpacity>
+);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-
-  profileSection: {
-    flexDirection: "row",
-    marginTop: 20,
-    marginBottom: 20,
-  },
-
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#ddd",
-    marginRight: 15,
-  },
-
-  profileInfo: {
-    flex: 1,
-    justifyContent: "center",
-  },
-
-  name: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.textDark,
-  },
-
-  email: {
-    fontSize: 14,
-    color: COLORS.textLight,
-    marginTop: 4,
-  },
-
-  editButton: {
-    marginTop: 8,
-    backgroundColor: COLORS.primary,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-
-  editButtonText: {
-    color: COLORS.accent,
-    fontWeight: "600",
-  },
-
-  card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 20,
-  },
-
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 12,
-    color: COLORS.primary,
-  },
-
-  loyaltyText: {
-    color: COLORS.textDark,
-    marginBottom: 12,
-  },
-
-  loyaltyRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  loyaltyButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.primary,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-  },
-
-  loyaltyButtonText: {
-    color: "#fff",
-    marginLeft: 6,
-    fontWeight: "600",
-  },
-
-  option: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-
-  optionText: {
-    marginLeft: 12,
-    fontSize: 15,
-    color: COLORS.textDark,
-  },
-
-  optionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
-  },
-
-  optionLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  deleteButton: {
-    backgroundColor: "#FDECEA",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-
-  deleteText: {
-    color: "#D32F2F",
-    fontWeight: "700",
-  },
-
-  logoutButton: {
-    backgroundColor: COLORS.primary,
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-
-  logoutText: {
-    color: COLORS.accent,
-    fontWeight: "700",
-  },
-  navBar: {
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "#fff",
-    paddingVertical: 12,
-    borderTopWidth: 0.5,
-    borderColor: "#ddd",
-  },
-
-  navItem: {
-    alignItems: "center",
-  },
-
-  navText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: COLORS.textLight,
   },
   header: {
     flexDirection: "row",
@@ -344,11 +176,168 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: COLORS.background,
   },
-
   headerTitle: {
     fontSize: 20,
     fontWeight: "800",
     color: COLORS.primary,
     letterSpacing: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 100, // Alt navigasyon barı için boşluk
+  },
+  profileSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 25,
+    marginTop: 10,
+    backgroundColor: COLORS.card,
+    padding: 15,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  avatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "#ddd",
+    marginRight: 15,
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.textDark,
+  },
+  email: {
+    fontSize: 13,
+    color: COLORS.textLight,
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  editButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  editButtonText: {
+    color: COLORS.accent,
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 15,
+    color: COLORS.primary,
+  },
+  loyaltyText: {
+    color: COLORS.textDark,
+    marginBottom: 15,
+    fontSize: 14,
+  },
+  loyaltyRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  loyaltyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    flex: 0.48, // Butonların eşit genişlikte olması için
+    justifyContent: 'center'
+  },
+  loyaltyButtonText: {
+    color: "#fff",
+    marginLeft: 6,
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  option: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0'
+  },
+  optionText: {
+    marginLeft: 12,
+    fontSize: 15,
+    color: COLORS.textDark,
+  },
+  optionRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0'
+  },
+  optionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  logoutButton: {
+    backgroundColor: COLORS.primary,
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  logoutText: {
+    color: COLORS.accent,
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  deleteButton: {
+    backgroundColor: "#FDECEA",
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  deleteText: {
+    color: "#D32F2F",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  bottomNav: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 12,
+    backgroundColor: COLORS.inputBg,
+    borderTopWidth: 1,
+    borderColor: "#EEE",
+  },
+  navItem: {
+    alignItems: "center",
+  },
+  navText: {
+    fontSize: 12,
+    marginTop: 4,
   },
 });
