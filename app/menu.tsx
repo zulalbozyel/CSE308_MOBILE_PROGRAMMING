@@ -2,14 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    FlatList,
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const COLORS = {
@@ -212,12 +212,12 @@ export default function MenuScreen() {
         <NavItem
           icon="receipt-outline"
           label="Siparişlerim"
-          onPress={() => router.push("/(tabs)/orders")}
+          onPress={() => router.push("/orders")}
         />
         <NavItem
           icon="person-outline"
           label="Profilim"
-          onPress={() => router.push("/(tabs)")}
+          onPress={() => router.push("/profile")}
         />
       </View>
     </SafeAreaView>

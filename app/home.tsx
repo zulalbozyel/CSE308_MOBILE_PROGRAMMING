@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
+//kamera import
+import { CameraView, useCameraPermissions } from "expo-camera";
 import {
   Dimensions,
   SafeAreaView,
@@ -55,6 +57,15 @@ export default function HomeScreen() {
   const filteredBranches = onlyOpen
     ? branches.filter((b) => b.status === "Açık")
     : branches;
+  // kamera ile ilgili stateler
+  const [showScanner, setShowScanner] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanned, setScanned] = useState(false);
+  const handleBarcodeScanned = ({ type, data }: any) => {
+    setScanned(true);
+    alert(`QR İçerik: ${data}`);
+    setShowScanner(false);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -161,8 +172,17 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* FAB */}
-      <TouchableOpacity style={styles.fab}>
-        <Ionicons name="qr-code-outline" size={28} color="#fff" />
+      <TouchableOpacity
+        style={styles.qrButton}
+        onPress={async () => {
+          if (!permission?.granted) {
+            await requestPermission();
+          }
+          setScanned(false);
+          setShowScanner(true);
+        }}
+      >
+        <Ionicons name="qr-code-outline" size={26} color="#fff" />
       </TouchableOpacity>
 
       {/* BOTTOM NAVIGATION */}
@@ -199,6 +219,25 @@ export default function HomeScreen() {
           <Text style={styles.navText}>Profilim</Text>
         </TouchableOpacity>
       </View>
+      {showScanner && (
+        <View style={styles.scannerContainer}>
+          <CameraView
+            style={StyleSheet.absoluteFillObject}
+            facing="back"
+            barcodeScannerSettings={{
+              barcodeTypes: ["qr"],
+            }}
+            onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+          />
+
+          <TouchableOpacity
+            style={styles.closeScanner}
+            onPress={() => setShowScanner(false)}
+          >
+            <Text style={{ color: "#fff", fontWeight: "bold" }}>Kapat</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -326,5 +365,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     color: COLORS.textDark,
+  },
+  qrButton: {
+    position: "absolute",
+    right: 20,
+    bottom: 80, // bottom nav'ın hemen üstü
+    backgroundColor: COLORS.primary,
+    width: 55,
+    height: 55,
+    borderRadius: 27.5,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 6,
+  },
+
+  scannerContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "black",
+    zIndex: 999,
+  },
+
+  closeScanner: {
+    position: "absolute",
+    bottom: 50,
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
 });
