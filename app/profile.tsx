@@ -1,14 +1,17 @@
-
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
 
 const COLORS = {
   primary: "#3E2723",
@@ -21,115 +24,157 @@ const COLORS = {
 
 export default function Profile() {
   const [notifications, setNotifications] = React.useState(true);
-
+  const router = useRouter();
+  // alt naigasyon barı için router ekledim, diğer sayfalara geçiş yapabilmek için.
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* PROFILE SECTION */}
-      <View style={styles.profileSection}>
-        <View style={styles.avatar} />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
+        {/* LOYALTY PROGRAM */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Sadakat Programı</Text>
 
-        <View style={styles.profileInfo}>
-          <Text style={styles.name}>Ad Soyad</Text>
-          <Text style={styles.email}>email@example.com</Text>
+          <Text style={styles.loyaltyText}>10 kahve alana 1 kahve bedava!</Text>
 
-          <TouchableOpacity style={styles.editButton}>
-            <Text style={styles.editButtonText}>Profili Düzenle</Text>
-          </TouchableOpacity>
+          <View style={styles.loyaltyRow}>
+            <TouchableOpacity style={styles.loyaltyButton}>
+              <Ionicons name="star-outline" size={18} color="#fff" />
+              <Text style={styles.loyaltyButtonText}>Puan Kazan</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.loyaltyButton}>
+              <Ionicons name="qr-code-outline" size={18} color="#fff" />
+              <Text style={styles.loyaltyButtonText}>QR Göster</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      {/* LOYALTY PROGRAM */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Sadakat Programı</Text>
+        {/* ACCOUNT SETTINGS */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Hesap Ayarları</Text>
 
-        <Text style={styles.loyaltyText}>10 kahve alana 1 kahve bedava!</Text>
-
-        <View style={styles.loyaltyRow}>
-          <TouchableOpacity style={styles.loyaltyButton}>
-            <Ionicons name="star-outline" size={18} color="#fff" />
-            <Text style={styles.loyaltyButtonText}>Puan Kazan</Text>
+          <TouchableOpacity style={styles.option}>
+            <Ionicons name="receipt-outline" size={20} color={COLORS.primary} />
+            <Text style={styles.optionText}>Sipariş Geçmişi</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.loyaltyButton}>
-            <Ionicons name="qr-code-outline" size={18} color="#fff" />
-            <Text style={styles.loyaltyButtonText}>QR Göster</Text>
+          <TouchableOpacity style={styles.option}>
+            <Ionicons name="card-outline" size={20} color={COLORS.primary} />
+            <Text style={styles.optionText}>Ödeme Yöntemleri</Text>
           </TouchableOpacity>
-        </View>
-      </View>
 
-      {/* ACCOUNT SETTINGS */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Hesap Ayarları</Text>
-
-        <TouchableOpacity style={styles.option}>
-          <Ionicons name="receipt-outline" size={20} color={COLORS.primary} />
-          <Text style={styles.optionText}>Sipariş Geçmişi</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.option}>
-          <Ionicons name="card-outline" size={20} color={COLORS.primary} />
-          <Text style={styles.optionText}>Ödeme Yöntemleri</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.option}>
-          <Ionicons
-            name="lock-closed-outline"
-            size={20}
-            color={COLORS.primary}
-          />
-          <Text style={styles.optionText}>Şifre Değiştir</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* APP SETTINGS */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Uygulama ve Diğer</Text>
-
-        <View style={styles.optionRow}>
-          <View style={styles.optionLeft}>
+          <TouchableOpacity style={styles.option}>
             <Ionicons
-              name="notifications-outline"
+              name="lock-closed-outline"
               size={20}
               color={COLORS.primary}
             />
-            <Text style={styles.optionText}>Bildirim Ayarları</Text>
-          </View>
-
-          <Switch value={notifications} onValueChange={setNotifications} />
+            <Text style={styles.optionText}>Şifre Değiştir</Text>
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.option}>
-          <Ionicons
-            name="help-circle-outline"
-            size={20}
-            color={COLORS.primary}
-          />
-          <Text style={styles.optionText}>Yardım ve Destek</Text>
+        {/* APP SETTINGS */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Uygulama ve Diğer</Text>
+
+          <View style={styles.optionRow}>
+            <View style={styles.optionLeft}>
+              <Ionicons
+                name="notifications-outline"
+                size={20}
+                color={COLORS.primary}
+              />
+              <Text style={styles.optionText}>Bildirim Ayarları</Text>
+            </View>
+
+            <Switch value={notifications} onValueChange={setNotifications} />
+          </View>
+
+          <TouchableOpacity style={styles.option}>
+            <Ionicons
+              name="help-circle-outline"
+              size={20}
+              color={COLORS.primary}
+            />
+            <Text style={styles.optionText}>Yardım ve Destek</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.option}>
+            <Ionicons
+              name="document-text-outline"
+              size={20}
+              color={COLORS.primary}
+            />
+            <Text style={styles.optionText}>Hak ve Şartlar</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* DANGER ZONE */}
+        <View style={styles.card}>
+          <TouchableOpacity style={styles.deleteButton}>
+            <Text style={styles.deleteText}>Hesap Sil</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.logoutButton}>
+            <Text style={styles.logoutText}>Çıkış Yap</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ height: 40 }} />
+
+        {/* HEADER */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.push("/")}>
+            <Ionicons
+              name="arrow-back-outline"
+              size={24}
+              color={COLORS.primary}
+            />
+          </TouchableOpacity>
+
+          <Text style={styles.headerTitle}>PROFIL</Text>
+
+          <View style={{ width: 24 }} />
+        </View>
+      </ScrollView>
+      {/* NAVBAR */}
+      <View style={styles.navBar}>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.push("/")}
+        >
+          <Ionicons name="home-outline" size={22} color={COLORS.textLight} />
+          <Text style={styles.navText}>Ana Sayfa</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.option}>
-          <Ionicons
-            name="document-text-outline"
-            size={20}
-            color={COLORS.primary}
-          />
-          <Text style={styles.optionText}>Hak ve Şartlar</Text>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.push("/orders")}
+        >
+          <Ionicons name="book-outline" size={22} color={COLORS.textLight} />
+          <Text style={styles.navText}>Menü</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.push("/orders")}
+        >
+          <Ionicons name="receipt-outline" size={22} color={COLORS.textLight} />
+          <Text style={styles.navText}>Siparişlerim</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem}>
+          <Ionicons name="person" size={22} color={COLORS.primary} />
+          <Text style={[styles.navText, { color: COLORS.primary }]}>
+            Profilim
+          </Text>
         </TouchableOpacity>
       </View>
-
-      {/* DANGER ZONE */}
-      <View style={styles.card}>
-        <TouchableOpacity style={styles.deleteButton}>
-          <Text style={styles.deleteText}>Hesap Sil</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Çıkış Yap</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={{ height: 40 }} />
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -137,7 +182,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingHorizontal: 20,
   },
 
   profileSection: {
@@ -271,5 +315,40 @@ const styles = StyleSheet.create({
   logoutText: {
     color: COLORS.accent,
     fontWeight: "700",
+  },
+  navBar: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: "#fff",
+    paddingVertical: 12,
+    borderTopWidth: 0.5,
+    borderColor: "#ddd",
+  },
+
+  navItem: {
+    alignItems: "center",
+  },
+
+  navText: {
+    fontSize: 12,
+    marginTop: 4,
+    color: COLORS.textLight,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: COLORS.background,
+  },
+
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: COLORS.primary,
+    letterSpacing: 1,
   },
 });
