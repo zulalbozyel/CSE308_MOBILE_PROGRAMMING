@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   FlatList,
+  Platform,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -20,66 +21,106 @@ const COLORS = {
   inputBg: "#FFFFFF",
   success: "#2E7D32",
   pending: "#EF6C00",
+  blue: "#1976D2",
 };
 
-// Tasarımı görebilmek için sahte veri (Mock Data)
+// Zenginleştirilmiş Sahte Veri
 const MOCK_ORDERS = [
   {
-    id: "101",
-    date: "5 Mart 2026, 14:30",
+    id: "105",
+    date: "Bugün, 14:30",
     status: "Hazırlanıyor",
-    items: "2x Iced Latte, 1x Çikolatalı Cookie",
-    totalPrice: 165,
+    branch: "Merkez Şubesi",
+    items: "2x Iced Latte, 1x San Sebastian, 1x Filtre Kahve",
+    totalPrice: 285,
+    isFavorite: false,
   },
   {
-    id: "100",
-    date: "3 Mart 2026, 09:15",
+    id: "104",
+    date: "Bugün, 09:15",
     status: "Teslim Edildi",
-    items: "1x Americano, 1x Kruvasan",
-    totalPrice: 110,
+    branch: "Kadıköy Şubesi",
+    items: "1x Americano, 2x Çikolatalı Cookie",
+    totalPrice: 145,
+    isFavorite: true, // Sık sipariş ibaresi için
+  },
+  {
+    id: "101",
+    date: "2 Mart 2026, 16:45",
+    status: "Teslim Edildi",
+    branch: "Merkez Şubesi",
+    items: "3x Cold Brew, 1x Tiramisu",
+    totalPrice: 345,
+    isFavorite: false,
   },
   {
     id: "099",
-    date: "1 Mart 2026, 16:45",
+    date: "28 Şubat 2026, 08:30",
     status: "Teslim Edildi",
-    items: "1x Filtre Kahve",
-    totalPrice: 45,
+    branch: "Kadıköy Şubesi",
+    items: "1x Espresso, 1x Kruvasan",
+    totalPrice: 110,
+    isFavorite: true,
   },
 ];
 
 export default function OrdersScreen() {
   const router = useRouter();
-  // Gerçek projede API'den gelen veriyi bu state'e atarsın
-  const [orders, setOrders] = useState(MOCK_ORDERS);
+  const [activeTab, setActiveTab] = useState("Aktif"); // "Aktif" veya "Gecmis"
 
-  // Kart tasarımını render eden fonksiyon
+  const filteredOrders = MOCK_ORDERS.filter((order) => {
+    if (activeTab === "Aktif") return order.status === "Hazırlanıyor";
+    return order.status === "Teslim Edildi";
+  });
+
   const renderOrderItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
+      {/* KART BAŞLIĞI */}
       <View style={styles.cardHeader}>
-        <Text style={styles.orderId}>Sipariş #{item.id}</Text>
-        <Text style={styles.orderDate}>{item.date}</Text>
-      </View>
-
-      <Text style={styles.itemsText}>{item.items}</Text>
-
-      <View style={styles.cardFooter}>
-        <Text style={styles.totalPrice}>{item.totalPrice} TL</Text>
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: item.status === "Hazırlanıyor" ? COLORS.pending : COLORS.success },
-          ]}
-        >
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={styles.iconBox}>
+             <Ionicons name="cafe" size={20} color={COLORS.primary} />
+          </View>
+          <View>
+            <Text style={styles.orderId}>Sipariş #{item.id}</Text>
+            <Text style={styles.orderDate}>{item.date} • {item.branch}</Text>
+          </View>
+        </View>
+        
+        <View style={[styles.statusBadge, { backgroundColor: item.status === "Hazırlanıyor" ? COLORS.pending : COLORS.success }]}>
           <Text style={styles.statusText}>{item.status}</Text>
         </View>
       </View>
 
-      {item.status === "Teslim Edildi" && (
-        <TouchableOpacity style={styles.reorderButton}>
-          <Ionicons name="refresh" size={16} color={COLORS.primary} />
-          <Text style={styles.reorderButtonText}>Tekrar Sipariş Ver</Text>
-        </TouchableOpacity>
+      {/* İÇERİK BİLGİSİ */}
+      <View style={styles.itemsContainer}>
+        <Text style={styles.itemsText}>{item.items}</Text>
+      </View>
+
+      {/* FAVORİ İBARESİ (Daha fazla satış için dürtükleme) */}
+      {item.isFavorite && item.status === "Teslim Edildi" && (
+        <View style={styles.favoriteBadge}>
+          <Ionicons name="star" size={14} color={COLORS.accent} />
+          <Text style={styles.favoriteText}>Favori Siparişiniz</Text>
+        </View>
       )}
+
+      {/* KART ALTI (Fiyat ve Buton) */}
+      <View style={styles.cardFooter}>
+        <Text style={styles.totalPrice}>{item.totalPrice} TL</Text>
+        
+        {item.status === "Teslim Edildi" ? (
+          <TouchableOpacity style={styles.reorderButton} onPress={() => router.push("/menu")}>
+            <Ionicons name="refresh" size={16} color="#FFF" />
+            <Text style={styles.reorderButtonText}>Tekrarlat</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.trackButton}>
+            
+            
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 
@@ -89,29 +130,45 @@ export default function OrdersScreen() {
 
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>Siparişlerim</Text>
-        <View style={{ width: 24 }} />
+        <TouchableOpacity style={styles.cartBtn} onPress={() => router.push("/menu")}>
+            <Ionicons name="add" size={24} color={COLORS.primary} />
+        </TouchableOpacity>
       </View>
 
-      {/* İÇERİK (Siparişler Listesi veya Boş Durum) */}
+      {/* TAB MENÜSÜ */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity 
+          style={[styles.tabButton, activeTab === "Aktif" && styles.tabActive]}
+          onPress={() => setActiveTab("Aktif")}
+        >
+          <Text style={[styles.tabText, activeTab === "Aktif" && styles.tabTextActive]}>Aktif Siparişler</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.tabButton, activeTab === "Gecmis" && styles.tabActive]}
+          onPress={() => setActiveTab("Gecmis")}
+        >
+          <Text style={[styles.tabText, activeTab === "Gecmis" && styles.tabTextActive]}>Geçmiş Siparişler</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* İÇERİK LİSTESİ */}
       <View style={styles.content}>
-        {orders.length === 0 ? (
+        {filteredOrders.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="receipt-outline" size={64} color="#D7CCC8" />
-            <Text style={styles.emptyTitle}>Henüz siparişiniz yok</Text>
+            <Text style={styles.emptyTitle}>Sipariş bulunamadı</Text>
             <Text style={styles.emptySubtitle}>
-              Kahve kokusu burnunuza gelmedi mi? Hemen menüye göz atın!
+              {activeTab === "Aktif" ? "Şu an hazırlanan bir siparişin yok. Bir kahve iyi giderdi!" : "Henüz hiç sipariş vermemişsin. Menüye göz at!"}
             </Text>
             <TouchableOpacity style={styles.browseButton} onPress={() => router.push("/menu")}>
-              <Text style={styles.browseButtonText}>Menüyü İncele</Text>
+              <Text style={styles.browseButtonText}>Sipariş Ver</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <FlatList
-            data={orders}
+            data={filteredOrders}
             keyExtractor={(item) => item.id}
             renderItem={renderOrderItem}
             contentContainerStyle={styles.listContainer}
@@ -122,31 +179,16 @@ export default function OrdersScreen() {
 
       {/* BOTTOM NAVIGATION */}
       <View style={styles.bottomNav}>
-        <NavItem
-          icon="home-outline"
-          label="Ana Sayfa"
-          onPress={() => router.push("/home")}
-          active={false}
-        />
-        <NavItem
-          icon="restaurant-outline"
-          label="Menü"
-          onPress={() => router.push("/menu")}
-          active={false}
-        />
-        <NavItem icon="receipt" label="Siparişlerim" active={true} />
-        <NavItem
-          icon="person-outline"
-          label="Profilim"
-          onPress={() => router.push("/profile")}
-          active={false}
-        />
+        <NavItem icon="home-outline" label="Ana Sayfa" onPress={() => router.push("/home")} active={false} />
+        <NavItem icon="restaurant-outline" label="Menü" onPress={() => router.push("/menu")} active={false} />
+        <NavItem icon="receipt" label="Siparişler" active={true} />
+        <NavItem icon="person-outline" label="Profil" onPress={() => router.push("/profile")} active={false} />
       </View>
     </SafeAreaView>
   );
 }
 
-// Navigasyon componenti: 'active' durumuna göre renk değiştiriyor
+// Navigasyon Componenti
 const NavItem = ({ icon, label, onPress, active }: any) => (
   <TouchableOpacity style={styles.navItem} onPress={onPress}>
     <Ionicons name={icon} size={22} color={active ? COLORS.accent : COLORS.textLight} />
@@ -157,146 +199,57 @@ const NavItem = ({ icon, label, onPress, active }: any) => (
 );
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
+  container: { flex: 1, backgroundColor: COLORS.background },
+  header: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "center", 
+    padding: 20, 
+    paddingTop: Platform.OS === 'android' ? 45 : 10,
+    backgroundColor: COLORS.background 
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: COLORS.background,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: COLORS.primary,
-    letterSpacing: 1,
-  },
-  content: {
-    flex: 1,
-  },
-  listContainer: {
-    padding: 15,
-    paddingBottom: 100, // Alt navigasyon barı üstüne binmesin diye
-  },
-  card: {
-    backgroundColor: COLORS.inputBg,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  orderId: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.primary,
-  },
-  orderDate: {
-    fontSize: 12,
-    color: COLORS.textLight,
-  },
-  itemsText: {
-    fontSize: 14,
-    color: COLORS.textDark,
-    lineHeight: 20,
-    marginBottom: 15,
-  },
-  cardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
-    paddingTop: 12,
-  },
-  totalPrice: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: COLORS.textDark,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  statusText: {
-    color: "#FFF",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  reorderButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 15,
-    paddingVertical: 10,
-    backgroundColor: "#F5E6E6",
-    borderRadius: 8,
-  },
-  reorderButtonText: {
-    marginLeft: 6,
-    color: COLORS.primary,
-    fontWeight: "700",
-    fontSize: 13,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 30,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.textDark,
-    marginTop: 15,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: COLORS.textLight,
-    textAlign: "center",
-    marginBottom: 25,
-    lineHeight: 20,
-  },
-  browseButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
-  },
-  browseButtonText: {
-    color: COLORS.accent,
-    fontWeight: "700",
-    fontSize: 14,
-  },
-  bottomNav: {
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 12,
-    backgroundColor: COLORS.inputBg,
-    borderTopWidth: 1,
-    borderColor: "#EEE",
-  },
-  navItem: {
-    alignItems: "center",
-  },
-  navText: {
-    fontSize: 12,
-    marginTop: 4,
-  },
+  headerTitle: { fontSize: 24, fontWeight: "900", color: COLORS.primary, letterSpacing: 0.5 },
+  cartBtn: { backgroundColor: COLORS.inputBg, padding: 8, borderRadius: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
+  
+  tabContainer: { flexDirection: "row", marginHorizontal: 20, marginBottom: 15, backgroundColor: COLORS.inputBg, borderRadius: 12, padding: 4 },
+  tabButton: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 10 },
+  tabActive: { backgroundColor: COLORS.primary },
+  tabText: { fontSize: 14, fontWeight: "600", color: COLORS.textLight },
+  tabTextActive: { color: COLORS.accent, fontWeight: "800" },
+
+  content: { flex: 1 },
+  listContainer: { paddingHorizontal: 20, paddingBottom: 100 },
+  
+  card: { backgroundColor: COLORS.inputBg, borderRadius: 16, padding: 18, marginBottom: 15, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3 },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 15 },
+  iconBox: { width: 40, height: 40, borderRadius: 10, backgroundColor: "#F5E6E6", justifyContent: "center", alignItems: "center", marginRight: 12 },
+  orderId: { fontSize: 15, fontWeight: "800", color: COLORS.textDark, marginBottom: 2 },
+  orderDate: { fontSize: 12, color: COLORS.textLight, fontWeight: "500" },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
+  statusText: { color: "#FFF", fontSize: 11, fontWeight: "700" },
+  
+  itemsContainer: { backgroundColor: "#F9F9F9", padding: 12, borderRadius: 10, marginBottom: 15 },
+  itemsText: { fontSize: 14, color: COLORS.textDark, lineHeight: 22, fontWeight: "500" },
+  
+  favoriteBadge: { flexDirection: "row", alignItems: "center", marginBottom: 15 },
+  favoriteText: { marginLeft: 6, fontSize: 12, color: COLORS.primary, fontWeight: "700" },
+
+  cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: "#EEE", paddingTop: 15 },
+  totalPrice: { fontSize: 18, fontWeight: "900", color: COLORS.primary },
+  
+  reorderButton: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.primary, paddingVertical: 10, paddingHorizontal: 15, borderRadius: 10 },
+  reorderButtonText: { color: COLORS.accent, fontWeight: "800", fontSize: 13, marginLeft: 6 },
+  
+  trackButton: { flexDirection: "row", alignItems: "center", backgroundColor: "#F5E6E6", paddingVertical: 10, paddingHorizontal: 15, borderRadius: 10 },
+  trackButtonText: { color: COLORS.primary, fontWeight: "800", fontSize: 13, marginLeft: 6 },
+
+  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 30, marginTop: 40 },
+  emptyTitle: { fontSize: 18, fontWeight: "800", color: COLORS.textDark, marginTop: 15, marginBottom: 8 },
+  emptySubtitle: { fontSize: 14, color: COLORS.textLight, textAlign: "center", marginBottom: 25, lineHeight: 20 },
+  browseButton: { backgroundColor: COLORS.primary, paddingVertical: 14, paddingHorizontal: 30, borderRadius: 12, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 5 },
+  browseButtonText: { color: COLORS.accent, fontWeight: "800", fontSize: 15 },
+  
+  bottomNav: { position: "absolute", bottom: 0, width: "100%", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, backgroundColor: COLORS.inputBg, borderTopWidth: 1, borderColor: "#EEE" },
+  navItem: { alignItems: "center" },
+  navText: { fontSize: 12, marginTop: 4 },
 });

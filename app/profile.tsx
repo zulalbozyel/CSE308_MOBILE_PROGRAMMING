@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Image,
+  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -50,8 +51,8 @@ export default function Profile() {
             style={styles.avatar} 
           />
           <View style={styles.profileInfo}>
-            <Text style={styles.name}>Ahmet Yılmaz</Text>
-            <Text style={styles.email}>ahmet.yilmaz@example.com</Text>
+            <Text style={styles.name}>Elif Tuzcuoğlu</Text>
+            <Text style={styles.email}>elif@example.com</Text>
             <TouchableOpacity style={styles.editButton}>
               <Text style={styles.editButtonText}>Profili Düzenle</Text>
             </TouchableOpacity>
@@ -168,6 +169,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0,
   },
   header: {
     flexDirection: "row",
