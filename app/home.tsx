@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
+import { useAuth } from "../context/AuthContext";
 
 const { width } = Dimensions.get("window");
 
@@ -48,6 +49,9 @@ const CAMPAIGNS = [
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  
+  const userName = user?.user_metadata?.full_name?.split(" ")[0] || "Kullanıcı";
   
   // Kamera State'leri
   const [showScanner, setShowScanner] = useState(false);
@@ -77,7 +81,7 @@ export default function HomeScreen() {
       {/* HEADER */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greetingText}>Günaydın, Elif! ☕</Text>
+          <Text style={styles.greetingText}>Günaydın, {userName}! ☕</Text>
           <Text style={styles.brandTitle}>ROASTERY</Text>
         </View>
         <TouchableOpacity style={styles.notificationBtn}>
