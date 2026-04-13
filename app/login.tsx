@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -12,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { supabase } from "../lib/supabase";
 
 const COLORS = {
   primary: "#3E2723", // dark brown primary color
@@ -25,11 +27,13 @@ const COLORS = {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("dceliknodes@gmail.com");
+  const [password, setPassword] = useState("123456!");
   const [emailError, setEmailError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false); // State for password visibility
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     // email check by regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.com$/i;
 
@@ -43,10 +47,18 @@ export default function LoginScreen() {
       return;
     }
 
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    setLoading(false);
 
-
-    router.push("/home");
-
+    if (error) {
+      Alert.alert("Giriş Başarısız", error.message);
+    } else {
+      router.push("/home");
+    }
   };
 
   return (
@@ -113,6 +125,8 @@ export default function LoginScreen() {
               placeholder="Şifreniz"
               placeholderTextColor={COLORS.textLight}
               secureTextEntry={!showPassword} // Toggle visibility
+              value={password}
+              onChangeText={setPassword}
             />
             {/* GÖZ İKONU BUTONU */}
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
@@ -128,8 +142,8 @@ export default function LoginScreen() {
             <Text style={styles.forgotPasswordText}>Şifremi Unuttum</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
-            <Text style={styles.primaryButtonText}>GİRİŞ YAP</Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleLogin} disabled={loading}>
+            <Text style={styles.primaryButtonText}>{loading ? "GİRİŞ YAPILIYOR..." : "GİRİŞ YAP"}</Text>
           </TouchableOpacity>
         </View>
 
