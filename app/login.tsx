@@ -47,7 +47,7 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -56,6 +56,7 @@ export default function LoginScreen() {
     if (error) {
       Alert.alert("Giriş Başarısız", error.message);
     } else {
+      console.log("Login Token:", data?.session?.access_token);
       router.push("/home");
     }
   };

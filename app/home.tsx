@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dimensions,
   Linking,
@@ -30,12 +30,6 @@ const COLORS = {
 };
 
 // --- MOCK DATALAR (Sunum için) ---
-// --- MOCK DATALAR (Sunum için) ---
-const branches = [
-  { id: 1, name: "Teknokent", distance: "0.2 km", status: "Açık", latitude: 36.8987, longitude: 30.6454 },
-  { id: 2, name: "Kaleiçi", distance: "5.1 km", status: "Kapalı", latitude: 36.8850, longitude: 30.7040 },
-];
-
 const SUGGESTIONS = [
   { id: 1, name: "Iced Latte", price: "45 TL", icon: "cafe-outline" },
   { id: 2, name: "Brownie", price: "55 TL", icon: "pizza-outline" },
@@ -49,9 +43,35 @@ const CAMPAIGNS = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   
   const userName = user?.user_metadata?.full_name?.split(" ")[0] || "Kullanıcı";
+
+  // Branch State
+  const [branches, setBranches] = useState<any[]>([]);
+  const [loadingBranches, setLoadingBranches] = useState(true);
+
+  useEffect(() => {
+    fetchBranches();
+  }, [session]);
+
+  const fetchBranches = async () => {
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}branches`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      setBranches(data);
+    } catch (error) {
+      console.error("Error fetching branches:", error);
+    } finally {
+      setLoadingBranches(false);
+    }
+  };
   
   // Kamera State'leri
   const [showScanner, setShowScanner] = useState(false);
@@ -100,18 +120,20 @@ export default function HomeScreen() {
             <MapView
               style={styles.map}
               initialRegion={{
-                latitude: 36.8900, 
-                longitude: 30.6700,
-                latitudeDelta: 0.08, 
-                longitudeDelta: 0.08,
+                latitude: 36.8987, // Antalya Center (Teknokent)
+                longitude: 30.6454,
+                latitudeDelta: 0.1, 
+                longitudeDelta: 0.1,
               }}
             >
               {branches.map((branch) => (
-                <Marker
-                  key={branch.id}
-                  coordinate={{ latitude: branch.latitude, longitude: branch.longitude }}
-                  title={branch.name}
-                />
+                branch.latitude && branch.longitude && (
+                  <Marker
+                    key={branch.id}
+                    coordinate={{ latitude: branch.latitude, longitude: branch.longitude }}
+                    title={branch.name}
+                  />
+                )
               ))}
             </MapView>
           </View>
@@ -120,26 +142,28 @@ export default function HomeScreen() {
           {branches.map((branch) => (
             <View key={branch.id} style={styles.compactBranchCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.branchName}>{branch.name} Şubesi</Text>
+                <Text style={styles.branchName}>{branch.name}</Text>
                 <Text style={styles.branchDist}>
-                  {branch.distance} • <Text style={{ color: branch.status === 'Açık' ? 'green' : 'red' }}>{branch.status}</Text>
+                  {branch.address} • <Text style={{ color: branch.isActive ? 'green' : 'red' }}>{branch.isActive ? 'Açık' : 'Kapalı'}</Text>
                 </Text>
               </View>
               
               <View style={styles.branchActions}>
                 <TouchableOpacity 
-                  style={styles.menuBtn}
-                  onPress={() => router.push({ pathname: "/menu", params: { branchName: branch.name } })}
+                   style={styles.menuBtn}
+                   onPress={() => router.push({ pathname: "/menu", params: { branchId: branch.id, branchName: branch.name } })}
                 >
                   <Text style={styles.menuBtnText}>Menü</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={styles.goBtn}
-                  onPress={() => openMap(branch.latitude, branch.longitude, branch.name)}
-                >
-                  <Ionicons name="navigate" size={18} color="#FFF" />
-                </TouchableOpacity>
+                {branch.latitude && branch.longitude && (
+                  <TouchableOpacity 
+                    style={styles.goBtn}
+                    onPress={() => openMap(branch.latitude, branch.longitude, branch.name)}
+                  >
+                    <Ionicons name="navigate" size={18} color="#FFF" />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           ))}

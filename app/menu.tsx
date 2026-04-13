@@ -50,7 +50,7 @@ const allProducts: Record<string, any[]> = {
 
 export default function MenuScreen() {
   const router = useRouter();
-  const { branchName } = useLocalSearchParams(); 
+  const { branchName } = useLocalSearchParams();
 
   // Aktif Şube State'i
   const [activeBranch, setActiveBranch] = useState((branchName as string) || "Merkez");
@@ -76,7 +76,7 @@ export default function MenuScreen() {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [cartCount, setCartCount] = useState(0);
   const touchY = useRef(0);
-  
+
   const [size, setSize] = useState("Medium");
   const [milk, setMilk] = useState("Tam Yağlı");
   const [sugar, setSugar] = useState("Şekersiz");
@@ -185,7 +185,7 @@ export default function MenuScreen() {
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.productCard} onPress={() => openCustomization(item)} activeOpacity={0.8}>
             <View style={styles.imagePlaceholder}>
-                <Ionicons name={item.category === "Tatlılar" || item.category === "Atıştırmalık" ? "restaurant" : "cafe"} size={36} color="#BCAAA4" />
+              <Ionicons name={item.category === "Tatlılar" || item.category === "Atıştırmalık" ? "restaurant" : "cafe"} size={36} color="#BCAAA4" />
             </View>
 
             <View style={styles.productInfo}>
@@ -207,8 +207,8 @@ export default function MenuScreen() {
           <View style={styles.branchModalContent}>
             <Text style={styles.branchModalTitle}>Şube Seçin</Text>
             {Object.keys(allProducts).map(branch => (
-              <TouchableOpacity 
-                key={branch} 
+              <TouchableOpacity
+                key={branch}
                 style={[styles.branchOption, activeBranch === branch && styles.branchOptionActive]}
                 onPress={() => {
                   setActiveBranch(branch);
@@ -228,7 +228,7 @@ export default function MenuScreen() {
       {/* CUSTOMIZATION MODAL (Özelleştirme ve Sepete Ekle) */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalVisible(false)}>
-          <View 
+          <View
             style={styles.modalContent}
             onStartShouldSetResponder={() => true}
             onTouchStart={(e) => touchY.current = e.nativeEvent.pageY}
@@ -239,8 +239,8 @@ export default function MenuScreen() {
             <View style={styles.dragHandle} />
 
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
-               <Text style={styles.modalTitle}>{selectedProduct?.name}</Text>
-               <Text style={styles.modalPrice}>{selectedProduct?.price} TL</Text>
+              <Text style={styles.modalTitle}>{selectedProduct?.name}</Text>
+              <Text style={styles.modalPrice}>{selectedProduct?.price} TL</Text>
             </View>
             <Text style={{ color: COLORS.textLight, marginBottom: 20 }}>{selectedProduct?.desc}</Text>
 
@@ -250,31 +250,31 @@ export default function MenuScreen() {
                 {/* SIZE PILLS */}
                 <Text style={styles.optionTitle}>Boyut</Text>
                 <View style={styles.pillContainer}>
-                    {["Small", "Medium", "Large"].map((s) => (
+                  {["Small", "Medium", "Large"].map((s) => (
                     <TouchableOpacity key={s} onPress={() => setSize(s)} style={[styles.pill, size === s && styles.pillActive]}>
-                        <Text style={[styles.pillText, size === s && styles.pillTextActive]}>{s}</Text>
+                      <Text style={[styles.pillText, size === s && styles.pillTextActive]}>{s}</Text>
                     </TouchableOpacity>
-                    ))}
+                  ))}
                 </View>
 
                 {/* MILK PILLS */}
                 <Text style={styles.optionTitle}>Süt Seçimi</Text>
                 <View style={styles.pillContainer}>
-                    {["Tam Yağlı", "Yağsız", "Yulaf", "Badem"].map((m) => (
+                  {["Tam Yağlı", "Yağsız", "Yulaf", "Badem"].map((m) => (
                     <TouchableOpacity key={m} onPress={() => setMilk(m)} style={[styles.pill, milk === m && styles.pillActive]}>
-                        <Text style={[styles.pillText, milk === m && styles.pillTextActive]}>{m}</Text>
+                      <Text style={[styles.pillText, milk === m && styles.pillTextActive]}>{m}</Text>
                     </TouchableOpacity>
-                    ))}
+                  ))}
                 </View>
 
                 {/* SUGAR PILLS */}
                 <Text style={styles.optionTitle}>Şeker</Text>
                 <View style={styles.pillContainer}>
-                    {["Şekersiz", "Az", "Orta", "Çok"].map((s) => (
+                  {["Şekersiz", "Az", "Orta", "Çok"].map((s) => (
                     <TouchableOpacity key={s} onPress={() => setSugar(s)} style={[styles.pill, sugar === s && styles.pillActive]}>
-                        <Text style={[styles.pillText, sugar === s && styles.pillTextActive]}>{s}</Text>
+                      <Text style={[styles.pillText, sugar === s && styles.pillTextActive]}>{s}</Text>
                     </TouchableOpacity>
-                    ))}
+                  ))}
                 </View>
               </>
             )}
@@ -298,7 +298,7 @@ export default function MenuScreen() {
                 Satın Al • {calculatePrice()} TL
               </Text>
             </TouchableOpacity>
-            
+
           </View>
         </TouchableOpacity>
       </Modal>
@@ -306,7 +306,7 @@ export default function MenuScreen() {
       {/* BOTTOM NAVIGATION */}
       <View style={styles.bottomNav}>
         <NavItem icon="home-outline" label="Ana Sayfa" onPress={() => router.push("/home")} active={false} />
-        <NavItem icon="book" label="Menü" onPress={() => {}} active={true} />
+        <NavItem icon="book" label="Menü" onPress={() => { }} active={true} />
         <NavItem icon="receipt-outline" label="Siparişler" onPress={() => router.push("/orders")} active={false} />
         <NavItem icon="person-outline" label="Profil" onPress={() => router.push("/profile")} active={false} />
       </View>
@@ -323,11 +323,11 @@ const NavItem = ({ icon, label, onPress, active }: any) => (
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    alignItems: "center", 
-    padding: 20, 
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
     paddingTop: Platform.OS === 'android' ? 45 : 10,
     backgroundColor: COLORS.background,
   },
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   cartIconContainer: { padding: 5, position: "relative" },
   badge: { position: "absolute", right: -2, top: -2, backgroundColor: COLORS.error, borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: COLORS.background },
   badgeText: { fontSize: 10, fontWeight: 'bold', color: "#FFF" },
-  
+
   searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.inputBg, marginHorizontal: 20, borderRadius: 12, paddingHorizontal: 15, height: 50, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, marginBottom: 15 },
   searchIcon: { marginRight: 10 },
   searchInput: { flex: 1, fontSize: 15, color: COLORS.textDark },
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   dragHandle: { width: 45, height: 5, backgroundColor: '#DDD', borderRadius: 5, alignSelf: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 22, fontWeight: "900", color: COLORS.primary },
   modalPrice: { fontSize: 20, fontWeight: "800", color: COLORS.accent },
-  
+
   optionTitle: { fontWeight: "800", marginTop: 15, marginBottom: 10, fontSize: 15, color: COLORS.textDark },
   pillContainer: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   pill: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, backgroundColor: COLORS.background, borderWidth: 1, borderColor: "#DDD" },
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
 
   cartButton: { backgroundColor: COLORS.primary, padding: 18, borderRadius: 16, alignItems: "center", shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
   cartButtonText: { color: COLORS.accent, fontWeight: "800", fontSize: 16, letterSpacing: 1 },
-  
+
   bottomNav: { position: "absolute", bottom: 0, width: "100%", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, backgroundColor: COLORS.inputBg, borderTopWidth: 1, borderColor: '#EEE' },
   navItem: { alignItems: "center" },
   navText: { fontSize: 12, marginTop: 4 },
