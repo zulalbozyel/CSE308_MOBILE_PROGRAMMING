@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -12,6 +13,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { supabase } from '../lib/supabase';
 
 const COLORS = {
   primary: '#3E2723',
@@ -31,17 +33,39 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
+    if (!email || !password || !fullName) {
+      Alert.alert("Hata", "Lütfen tüm alanları doldurun.");
+      return;
+    }
+
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      Alert.alert("Hata", "Şifreler eşleşmiyor!");
       return;
     }
     
-    console.log('Sign Up Data:', { fullName, email, password });
+    setLoading(true);
     
-    // Doğru Yönlendirme Kodu:
-    router.push('/home');
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        }
+      }
+    });
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Kayıt Başarısız", error.message);
+    } else {
+      Alert.alert("Başarılı!", "Hesabınız oluşturuldu. Lütfen giriş yapın.");
+      router.replace('/login');
+    }
   };
 
   return (
@@ -115,8 +139,8 @@ export default function SignUpScreen() {
             />
           </View>
 
-          <TouchableOpacity style={styles.primaryButton} onPress={handleSignUp}>
-            <Text style={styles.primaryButtonText}>KAYIT OL</Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleSignUp} disabled={loading}>
+            <Text style={styles.primaryButtonText}>{loading ? "KAYIT OLUNUYOR..." : "KAYIT OL"}</Text>
           </TouchableOpacity>
         </View>
 
