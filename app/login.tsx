@@ -27,14 +27,13 @@ const COLORS = {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState("dceliknodes@gmail.com");
-  const [password, setPassword] = useState("123456!");
+  const [email, setEmail] = useState("el2m299@gmail.com");
+  const [password, setPassword] = useState("123456");
   const [emailError, setEmailError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // State for password visibility
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    // email check by regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.com$/i;
 
     if (!email) {

@@ -13,6 +13,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabase";
 
 const COLORS = {
   primary: "#3E2723",
@@ -21,11 +23,17 @@ const COLORS = {
   textDark: "#212121",
   textLight: "#757575",
   card: "#FFFFFF",
-  inputBg: "#FFFFFF", // İşte burası eksikti, bunu ekliyoruz
+  inputBg: "#FFFFFF",
 };
 export default function Profile() {
   const [notifications, setNotifications] = useState(true);
   const router = useRouter();
+  const { user } = useAuth();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace("/login");
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -46,13 +54,13 @@ export default function Profile() {
       >
         {/* PROFİL BİLGİLERİ */}
         <View style={styles.profileSection}>
-          <Image 
-            source={{ uri: 'https://avatar.iran.liara.run/public/boy?username=Ash' }} // Geçici avatar resmi
-            style={styles.avatar} 
+          <Image
+            source={{ uri: `https://avatar.iran.liara.run/public/boy?username=${user?.user_metadata?.full_name || user?.email || 'User'}` }} // Geçici avatar resmi
+            style={styles.avatar}
           />
           <View style={styles.profileInfo}>
-            <Text style={styles.name}>Elif Tuzcuoğlu</Text>
-            <Text style={styles.email}>elif@example.com</Text>
+            <Text style={styles.name}>{user?.user_metadata?.full_name || "Kullanıcı"}</Text>
+            <Text style={styles.email}>{user?.email || "E-posta bulunamadı"}</Text>
             <TouchableOpacity style={styles.editButton}>
               <Text style={styles.editButtonText}>Profili Düzenle</Text>
             </TouchableOpacity>
@@ -119,7 +127,7 @@ export default function Profile() {
 
         {/* TEHLİKELİ İŞLEMLER */}
         <View style={styles.card}>
-          <TouchableOpacity style={styles.logoutButton} onPress={() => router.replace("/login")}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutText}>Çıkış Yap</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.deleteButton}>
