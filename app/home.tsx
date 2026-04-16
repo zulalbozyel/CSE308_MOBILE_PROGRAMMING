@@ -6,7 +6,6 @@ import {
   Dimensions,
   Linking,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker } from "react-native-maps";
 import { useAuth } from "../context/AuthContext";
 
@@ -163,14 +163,16 @@ export default function HomeScreen() {
                 ))}
             </MapView>
           </View>
-
           {/* Şube Kartları & Menü Butonu */}
           {branches.map((branch) => (
             <View key={branch.id} style={styles.compactBranchCard}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.branchName}>{branch.name}</Text>
                 <Text style={styles.branchDist}>
-                  {branch.address} • <Text style={{ color: branch.isActive ? 'green' : 'red' }}>{branch.isActive ? 'Açık' : 'Kapalı'}</Text>
+                  {`${branch.address || ""} • `}
+                  <Text style={{ color: branch.isActive ? "green" : "red" }}>
+                    {branch.isActive ? "Açık" : "Kapalı"}
+                  </Text>
                 </Text>
               </View>
 
@@ -182,7 +184,7 @@ export default function HomeScreen() {
                   <Text style={styles.menuBtnText}>Menü</Text>
                 </TouchableOpacity>
 
-                {branch.latitude && branch.longitude && (
+                {!!(branch.latitude && branch.longitude) && (
                   <TouchableOpacity
                     style={styles.goBtn}
                     onPress={() => openMap(branch.latitude, branch.longitude, branch.name)}
