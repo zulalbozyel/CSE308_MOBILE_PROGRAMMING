@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
-
+import { useAuth } from "../context/AuthContext";
 import {
   FlatList,
   Modal,
@@ -51,6 +51,8 @@ const allProducts: Record<string, any[]> = {
 export default function MenuScreen() {
   const router = useRouter();
   const { branchName } = useLocalSearchParams();
+  const { session } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Aktif Şube State'i
   const [activeBranch, setActiveBranch] = useState((branchName as string) || "Merkez");
@@ -95,14 +97,38 @@ export default function MenuScreen() {
     setModalVisible(true);
   };
 
-  const addToCart = () => {
-    setCartCount(cartCount + quantity);
-    setModalVisible(false);
-    // Modal kapanınca ayarları sıfırla
-    setQuantity(1);
-    setSize("Medium");
-    setMilk("Tam Yağlı");
-    setSugar("Şekersiz");
+  const addToCart = async () => {
+    const price = calculatePrice();
+    setIsProcessing(true);
+
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      const response = await fetch(`${apiUrl}wallet/spend-coins`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount: price, orderId: null }),
+      });
+
+      if (response.ok) {
+        alert(`Siparişiniz alındı! Cüzdanınızdan ${price} TL düşüldü. ☕`);
+        setCartCount(cartCount + quantity);
+        setModalVisible(false);
+        // Modal kapanınca ayarları sıfırla
+        setQuantity(1);
+        setSize("Medium");
+        setMilk("Tam Yağlı");
+        setSugar("Şekersiz");
+      } else {
+        alert("Bakiye yetersiz! Lütfen cüzdanınıza para yükleyerek tekrar deneyin.");
+      }
+    } catch (error) {
+      console.error("Sipariş ödemesi alınırken hata oluştu:", error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -293,9 +319,9 @@ export default function MenuScreen() {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.cartButton} onPress={addToCart}>
+            <TouchableOpacity style={[styles.cartButton, isProcessing && { opacity: 0.7 }]} onPress={addToCart} disabled={isProcessing}>
               <Text style={styles.cartButtonText}>
-                Satın Al • {calculatePrice()} TL
+                {isProcessing ? "İşleniyor..." : `Satın Al • ${calculatePrice()} TL`}
               </Text>
             </TouchableOpacity>
 
