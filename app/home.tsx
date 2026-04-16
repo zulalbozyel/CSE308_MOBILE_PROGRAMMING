@@ -57,15 +57,20 @@ export default function HomeScreen() {
 
   const fetchBranches = async () => {
     try {
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-      const response = await fetch(`${apiUrl}branches`, {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      const response = await fetch(`${apiUrl}branches?isActive=true`, {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json',
         },
       });
-      const data = await response.json();
-      setBranches(data);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setBranches(data);
+      } else {
+        console.error("API Hatası:", response.status, await response.text());
+      }
     } catch (error) {
       console.error("Error fetching branches:", error);
     } finally {
