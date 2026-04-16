@@ -5,16 +5,18 @@ import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   Linking,
+  Modal,
   Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker } from "react-native-maps";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 
 const { width } = Dimensions.get("window");
@@ -46,14 +48,77 @@ export default function HomeScreen() {
   const [branches, setBranches] = useState<any[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
 
-  // Suggestions State
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+  // Wallet State
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   useEffect(() => {
     fetchBranches();
-    fetchSuggestions();
+    if (session?.access_token) {
+      fetchWallet();
+    }
   }, [session]);
+
+  const fetchWallet = async () => {
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      const response = await fetch(`${apiUrl}wallet`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Backend'in dönüş formatına göre balance veya amount okuyoruz
+        setWalletBalance(data.balance !== undefined ? data.balance : data.amount || 0);
+      }
+    } catch (error) {
+      console.error("Cüzdan bilgileri çekilemedi:", error);
+    }
+  };
+
+  // Payment Modal State
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [addAmount, setAddAmount] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvv, setCvv] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const processPayment = async () => {
+    if (!addAmount || isNaN(Number(addAmount))) {
+      alert("Lütfen geçerli bir tutar girin.");
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      // Backend api/wallet/add-coins ucunda JSON objesi yerine direkt "double" miktar istiyor. (Swagger'a göre)
+      const response = await fetch(`${apiUrl}wallet/add-coins`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(Number(addAmount)),
+      });
+      if (response.ok) {
+        alert(`Cüzdana başarıyla ${addAmount} TL yüklendi! 💸`);
+        fetchWallet();
+        setPaymentModalVisible(false);
+        setAddAmount("");
+        setCardNumber("");
+        setExpiry("");
+        setCvv("");
+      } else {
+        alert("Bakiye yükleme başarısız oldu. Sunucu yanıtı: " + response.status);
+      }
+    } catch (error) {
+      console.error("Bakiye eklenirken hata oluştu:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const fetchBranches = async () => {
     try {
@@ -64,7 +129,7 @@ export default function HomeScreen() {
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setBranches(data);
@@ -87,7 +152,7 @@ export default function HomeScreen() {
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setSuggestions(data.slice(0, 4));
@@ -152,15 +217,15 @@ export default function HomeScreen() {
                 longitudeDelta: 0.1,
               }}
             >
-              {branches
-                .filter((b) => b.latitude && b.longitude)
-                .map((branch) => (
+              {branches.map((branch) => (
+                (branch.latitude && branch.longitude) ? (
                   <Marker
                     key={branch.id}
-                    coordinate={{ latitude: branch.latitude, longitude: branch.longitude }}
+                    coordinate={{ latitude: Number(branch.latitude), longitude: Number(branch.longitude) }}
                     title={branch.name}
                   />
-                ))}
+                ) : null
+              ))}
             </MapView>
           </View>
           {/* Şube Kartları & Menü Butonu */}
@@ -184,14 +249,14 @@ export default function HomeScreen() {
                   <Text style={styles.menuBtnText}>Menü</Text>
                 </TouchableOpacity>
 
-                {!!(branch.latitude && branch.longitude) && (
+                {(branch.latitude && branch.longitude) ? (
                   <TouchableOpacity
                     style={styles.goBtn}
-                    onPress={() => openMap(branch.latitude, branch.longitude, branch.name)}
+                    onPress={() => openMap(Number(branch.latitude), Number(branch.longitude), branch.name)}
                   >
                     <Ionicons name="navigate" size={18} color="#FFF" />
                   </TouchableOpacity>
-                )}
+                ) : null}
               </View>
             </View>
           ))}
@@ -202,11 +267,13 @@ export default function HomeScreen() {
           <View style={styles.walletRow}>
             <View>
               <Text style={styles.walletLabel}>Cüzdan Bakiyesi</Text>
-              <Text style={styles.walletAmount}>120.50 TL</Text>
+              <Text style={styles.walletAmount}>
+                {walletBalance !== null ? `${walletBalance} TL` : 'Yükleniyor...'}
+              </Text>
             </View>
           </View>
           <View style={styles.walletActions}>
-            <TouchableOpacity style={styles.actionBtn}>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => setPaymentModalVisible(true)}>
               <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
               <Text style={styles.actionBtnText}>TL Yükle</Text>
             </TouchableOpacity>
@@ -267,7 +334,37 @@ export default function HomeScreen() {
         <NavItem icon="restaurant-outline" label="Menü" onPress={() => router.push("/menu")} active={false} />
         <NavItem icon="receipt-outline" label="Siparişler" onPress={() => router.push("/orders")} active={false} />
         <NavItem icon="person-outline" label="Profil" onPress={() => router.push("/profile")} active={false} />
-      </View>
+      </View >
+
+      {/* 🚀 PREMIUM KREDI KARTI / PAYMENT MODAL */}
+      <Modal visible={paymentModalVisible} animationType="slide" transparent>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setPaymentModalVisible(false)}>
+          <View style={styles.paymentModal} onStartShouldSetResponder={() => true}>
+            <Text style={styles.modalTitle}>Kredi Kartı ile TL Yükle</Text>
+
+            <View style={styles.creditCard}>
+              <Text style={styles.cardLogo}>ROASTERY</Text>
+              <Text style={styles.cardNumberDisplay}>{cardNumber || "•••• •••• •••• ••••"}</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
+                <Text style={styles.cardTextDisplay}>{userName}</Text>
+                <Text style={styles.cardTextDisplay}>{expiry || "AA/YY"}</Text>
+              </View>
+            </View>
+
+            <TextInput style={styles.inputCard} placeholder="Yüklemek İstediğiniz Tutar (Örn: 100)" keyboardType="numeric" value={addAmount} onChangeText={setAddAmount} placeholderTextColor="#999" />
+            <TextInput style={styles.inputCard} placeholder="Kart Numarası" keyboardType="numeric" maxLength={16} value={cardNumber} onChangeText={setCardNumber} placeholderTextColor="#999" />
+
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <TextInput style={[styles.inputCard, { flex: 0.48 }]} placeholder="AA/YY" maxLength={5} value={expiry} onChangeText={setExpiry} placeholderTextColor="#999" />
+              <TextInput style={[styles.inputCard, { flex: 0.48 }]} placeholder="CVV" keyboardType="numeric" maxLength={3} value={cvv} onChangeText={setCvv} placeholderTextColor="#999" />
+            </View>
+
+            <TouchableOpacity style={styles.payBtn} onPress={processPayment} disabled={isProcessing}>
+              <Text style={styles.payBtnText}>{isProcessing ? "İşleniyor..." : "Yüklemeyi Tamamla"}</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* 🚀 MODERN QR SCANNER OVERLAY */}
       {showScanner && (
@@ -409,4 +506,16 @@ const styles = StyleSheet.create({
   cameraControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: 250 },
   iconButton: { width: 60, height: 60, borderRadius: 30, backgroundColor: "rgba(255,255,255,0.2)", justifyContent: "center", alignItems: "center" },
   closeScannerModern: { width: 70, height: 70, borderRadius: 35, backgroundColor: COLORS.error, justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
+
+  // --- PAYMENT MODAL STYLES ---
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  modalTitle: { fontSize: 22, fontWeight: "bold", color: COLORS.primary, marginBottom: 20, textAlign: "center" },
+  paymentModal: { backgroundColor: '#FFF', width: '100%', padding: 25, borderTopLeftRadius: 30, borderTopRightRadius: 30, marginTop: 'auto', shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 10, elevation: 20 },
+  creditCard: { backgroundColor: '#1C1C1E', padding: 20, borderRadius: 15, marginBottom: 25, elevation: 10, shadowColor: '#000', shadowOpacity: 0.3, shadowOffset: { width: 0, height: 5 } },
+  cardLogo: { color: COLORS.accent, fontWeight: 'bold', fontSize: 18, marginBottom: 20 },
+  cardNumberDisplay: { color: '#FFF', fontSize: 22, letterSpacing: 3 },
+  cardTextDisplay: { color: '#AAA', fontSize: 14, textTransform: 'uppercase', letterSpacing: 1 },
+  inputCard: { backgroundColor: '#F5F5F5', paddingHorizontal: 15, paddingVertical: 14, borderRadius: 12, marginBottom: 15, fontSize: 16, color: COLORS.textDark },
+  payBtn: { backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 10, marginBottom: 10 },
+  payBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16, letterSpacing: 0.5 },
 });
