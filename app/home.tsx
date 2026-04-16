@@ -6,7 +6,6 @@ import {
   Dimensions,
   Linking,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker } from "react-native-maps";
 import { useAuth } from "../context/AuthContext";
 
@@ -30,11 +30,6 @@ const COLORS = {
 };
 
 // --- MOCK DATALAR (Sunum için) ---
-const SUGGESTIONS = [
-  { id: 1, name: "Iced Latte", price: "45 TL", icon: "cafe-outline" },
-  { id: 2, name: "Brownie", price: "55 TL", icon: "pizza-outline" },
-  { id: 3, name: "Cold Brew", price: "60 TL", icon: "snow-outline" },
-];
 
 const CAMPAIGNS = [
   { id: 1, title: "Sadakat Puanlarınla Bedava Kahveni Al!", subtitle: "Hemen kullan", bg: COLORS.primary, textColor: "#FFF" },
@@ -51,8 +46,13 @@ export default function HomeScreen() {
   const [branches, setBranches] = useState<any[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
 
+  // Suggestions State
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+
   useEffect(() => {
     fetchBranches();
+    fetchSuggestions();
   }, [session]);
 
   const fetchBranches = async () => {
@@ -75,6 +75,27 @@ export default function HomeScreen() {
       console.error("Error fetching branches:", error);
     } finally {
       setLoadingBranches(false);
+    }
+  };
+
+  const fetchSuggestions = async () => {
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      const response = await fetch(`${apiUrl}products?isAvailable=true`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data.slice(0, 4));
+      }
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+    } finally {
+      setLoadingSuggestions(false);
     }
   };
 
@@ -124,32 +145,34 @@ export default function HomeScreen() {
           <View style={styles.mapContainer}>
             <MapView
               style={styles.map}
-              initialRegion={{
-                latitude: 36.8987, // Antalya Center (Teknokent)
+              initialRegion={{ // Antalya Merkez View
+                latitude: 36.8987,
                 longitude: 30.6454,
                 latitudeDelta: 0.1,
                 longitudeDelta: 0.1,
               }}
             >
-              {branches.map((branch) => (
-                branch.latitude && branch.longitude && (
+              {branches
+                .filter((b) => b.latitude && b.longitude)
+                .map((branch) => (
                   <Marker
                     key={branch.id}
                     coordinate={{ latitude: branch.latitude, longitude: branch.longitude }}
                     title={branch.name}
                   />
-                )
-              ))}
+                ))}
             </MapView>
           </View>
-
           {/* Şube Kartları & Menü Butonu */}
           {branches.map((branch) => (
             <View key={branch.id} style={styles.compactBranchCard}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.branchName}>{branch.name}</Text>
                 <Text style={styles.branchDist}>
-                  {branch.address} • <Text style={{ color: branch.isActive ? 'green' : 'red' }}>{branch.isActive ? 'Açık' : 'Kapalı'}</Text>
+                  {`${branch.address || ""} • `}
+                  <Text style={{ color: branch.isActive ? "green" : "red" }}>
+                    {branch.isActive ? "Açık" : "Kapalı"}
+                  </Text>
                 </Text>
               </View>
 
@@ -161,7 +184,7 @@ export default function HomeScreen() {
                   <Text style={styles.menuBtnText}>Menü</Text>
                 </TouchableOpacity>
 
-                {branch.latitude && branch.longitude && (
+                {!!(branch.latitude && branch.longitude) && (
                   <TouchableOpacity
                     style={styles.goBtn}
                     onPress={() => openMap(branch.latitude, branch.longitude, branch.name)}
@@ -175,7 +198,7 @@ export default function HomeScreen() {
         </View>
 
         {/* WALLET & LOYALTY CARD */}
-        < View style={styles.walletCard} >
+        <View style={styles.walletCard}>
           <View style={styles.walletRow}>
             <View>
               <Text style={styles.walletLabel}>Cüzdan Bakiyesi</Text>
@@ -192,26 +215,26 @@ export default function HomeScreen() {
               <Text style={styles.actionBtnTextLight}>QR Göster</Text>
             </TouchableOpacity>
           </View>
-        </View >
+        </View>
 
         {/* SUGGESTIONS */}
-        < View style={styles.section} >
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Bunları denedin mi?</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-            {SUGGESTIONS.map((item) => (
+            {suggestions.map((item) => (
               <TouchableOpacity key={item.id} style={styles.suggestionCard} onPress={() => router.push("/menu")}>
                 <View style={styles.iconBox}>
-                  <Ionicons name={item.icon as any} size={28} color={COLORS.primary} />
+                  <Ionicons name="cafe-outline" size={28} color={COLORS.primary} />
                 </View>
                 <Text style={styles.suggestionName}>{item.name}</Text>
-                <Text style={styles.suggestionPrice}>{item.price}</Text>
+                <Text style={styles.suggestionPrice}>{item.price} TL</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View >
+        </View>
 
         {/* ANNOUNCEMENTS */}
-        < View style={styles.section} >
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Duyurular & Fırsatlar</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
             {CAMPAIGNS.map((camp) => (
@@ -221,12 +244,12 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View >
+        </View>
 
-      </ScrollView >
+      </ScrollView>
 
       {/* FAB - QR SCANNER */}
-      < TouchableOpacity
+      <TouchableOpacity
         style={styles.qrButton}
         onPress={async () => {
           if (!permission?.granted) await requestPermission();
@@ -236,7 +259,7 @@ export default function HomeScreen() {
         }}
       >
         <Ionicons name="scan" size={26} color={COLORS.primary} />
-      </TouchableOpacity >
+      </TouchableOpacity>
 
       {/* BOTTOM NAVIGATION */}
       <View style={styles.bottomNav}>
@@ -244,7 +267,7 @@ export default function HomeScreen() {
         <NavItem icon="restaurant-outline" label="Menü" onPress={() => router.push("/menu")} active={false} />
         <NavItem icon="receipt-outline" label="Siparişler" onPress={() => router.push("/orders")} active={false} />
         <NavItem icon="person-outline" label="Profil" onPress={() => router.push("/profile")} active={false} />
-      </View >
+      </View>
 
       {/* 🚀 MODERN QR SCANNER OVERLAY */}
       {showScanner && (
