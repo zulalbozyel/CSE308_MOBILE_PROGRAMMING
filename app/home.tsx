@@ -51,10 +51,15 @@ export default function HomeScreen() {
   // Wallet State
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
+  // Suggestions State
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+
   useEffect(() => {
     fetchBranches();
     if (session?.access_token) {
       fetchWallet();
+      fetchSuggestions();
     }
   }, [session]);
 
