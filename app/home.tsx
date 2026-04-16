@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   Linking,
@@ -44,7 +44,7 @@ const CAMPAIGNS = [
 export default function HomeScreen() {
   const router = useRouter();
   const { user, session } = useAuth();
-  
+
   const userName = user?.user_metadata?.full_name?.split(" ")[0] || "Kullanıcı";
 
   // Branch State
@@ -72,7 +72,7 @@ export default function HomeScreen() {
       setLoadingBranches(false);
     }
   };
-  
+
   // Kamera State'leri
   const [showScanner, setShowScanner] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
@@ -111,18 +111,18 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        
+
         {/* EN ÜST: COMPACT MAP & BRANCHES */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Yakındaki Şubeler</Text>
-          
+
           <View style={styles.mapContainer}>
             <MapView
               style={styles.map}
               initialRegion={{
                 latitude: 36.8987, // Antalya Center (Teknokent)
                 longitude: 30.6454,
-                latitudeDelta: 0.1, 
+                latitudeDelta: 0.1,
                 longitudeDelta: 0.1,
               }}
             >
@@ -147,17 +147,17 @@ export default function HomeScreen() {
                   {branch.address} • <Text style={{ color: branch.isActive ? 'green' : 'red' }}>{branch.isActive ? 'Açık' : 'Kapalı'}</Text>
                 </Text>
               </View>
-              
+
               <View style={styles.branchActions}>
-                <TouchableOpacity 
-                   style={styles.menuBtn}
-                   onPress={() => router.push({ pathname: "/menu", params: { branchId: branch.id, branchName: branch.name } })}
+                <TouchableOpacity
+                  style={styles.menuBtn}
+                  onPress={() => router.push({ pathname: "/menu", params: { branchId: branch.id, branchName: branch.name } })}
                 >
                   <Text style={styles.menuBtnText}>Menü</Text>
                 </TouchableOpacity>
 
                 {branch.latitude && branch.longitude && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.goBtn}
                     onPress={() => openMap(branch.latitude, branch.longitude, branch.name)}
                   >
@@ -170,7 +170,7 @@ export default function HomeScreen() {
         </View>
 
         {/* WALLET & LOYALTY CARD */}
-        <View style={styles.walletCard}>
+        < View style={styles.walletCard} >
           <View style={styles.walletRow}>
             <View>
               <Text style={styles.walletLabel}>Cüzdan Bakiyesi</Text>
@@ -187,10 +187,10 @@ export default function HomeScreen() {
               <Text style={styles.actionBtnTextLight}>QR Göster</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </View >
 
         {/* SUGGESTIONS */}
-        <View style={styles.section}>
+        < View style={styles.section} >
           <Text style={styles.sectionTitle}>Bunları denedin mi?</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
             {SUGGESTIONS.map((item) => (
@@ -203,10 +203,10 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View>
+        </View >
 
         {/* ANNOUNCEMENTS */}
-        <View style={styles.section}>
+        < View style={styles.section} >
           <Text style={styles.sectionTitle}>Duyurular & Fırsatlar</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
             {CAMPAIGNS.map((camp) => (
@@ -216,12 +216,12 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View>
+        </View >
 
-      </ScrollView>
+      </ScrollView >
 
       {/* FAB - QR SCANNER */}
-      <TouchableOpacity
+      < TouchableOpacity
         style={styles.qrButton}
         onPress={async () => {
           if (!permission?.granted) await requestPermission();
@@ -231,15 +231,15 @@ export default function HomeScreen() {
         }}
       >
         <Ionicons name="scan" size={26} color={COLORS.primary} />
-      </TouchableOpacity>
+      </TouchableOpacity >
 
       {/* BOTTOM NAVIGATION */}
       <View style={styles.bottomNav}>
-        <NavItem icon="home" label="Ana Sayfa" onPress={() => {}} active={true} />
+        <NavItem icon="home" label="Ana Sayfa" onPress={() => { }} active={true} />
         <NavItem icon="restaurant-outline" label="Menü" onPress={() => router.push("/menu")} active={false} />
         <NavItem icon="receipt-outline" label="Siparişler" onPress={() => router.push("/orders")} active={false} />
         <NavItem icon="person-outline" label="Profil" onPress={() => router.push("/profile")} active={false} />
-      </View>
+      </View >
 
       {/* 🚀 MODERN QR SCANNER OVERLAY */}
       {showScanner && (
@@ -255,7 +255,7 @@ export default function HomeScreen() {
             <View style={styles.layerTop} />
             <View style={styles.layerCenter}>
               <View style={styles.layerLeft} />
-              
+
               {/* Odak Izgarası (Viewfinder) */}
               <View style={styles.focusedArea}>
                 <View style={[styles.corner, styles.topLeft]} />
@@ -268,18 +268,18 @@ export default function HomeScreen() {
             </View>
             <View style={styles.layerBottom}>
               <Text style={styles.scanText}>Puan kazanmak için QR kodu okutun</Text>
-              
+
               {/* Kamera Kontrol Butonları */}
               <View style={styles.cameraControls}>
-                <TouchableOpacity 
-                  style={styles.iconButton} 
+                <TouchableOpacity
+                  style={styles.iconButton}
                   onPress={() => setTorch(!torch)}
                 >
                   <Ionicons name={torch ? "flash" : "flash-off"} size={28} color="#FFF" />
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={styles.closeScannerModern} 
+                <TouchableOpacity
+                  style={styles.closeScannerModern}
                   onPress={() => {
                     setShowScanner(false);
                     setTorch(false);
@@ -308,18 +308,18 @@ const NavItem = ({ icon, label, onPress, active }: any) => (
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    alignItems: "center", 
-    padding: 20, 
-    paddingTop: Platform.OS === 'android' ? 45 : 10 
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    paddingTop: Platform.OS === 'android' ? 45 : 10
   },
   greetingText: { fontSize: 14, color: COLORS.textLight, marginBottom: 4 },
   brandTitle: { fontSize: 22, fontWeight: "900", color: COLORS.primary, letterSpacing: 1 },
   notificationBtn: { padding: 8, backgroundColor: COLORS.inputBg, borderRadius: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
   badge: { position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.error },
-  
+
   walletCard: { backgroundColor: COLORS.primary, marginHorizontal: 20, borderRadius: 20, padding: 20, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6, marginBottom: 25 },
   walletRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   walletLabel: { color: "rgba(255,255,255,0.7)", fontSize: 13, marginBottom: 4 },
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   section: { marginBottom: 25 },
   sectionTitle: { fontSize: 18, fontWeight: "700", color: COLORS.textDark, marginHorizontal: 20, marginBottom: 15 },
   horizontalScroll: { paddingLeft: 20 },
-  
+
   suggestionCard: { backgroundColor: COLORS.inputBg, padding: 15, borderRadius: 16, marginRight: 15, width: 120, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   iconBox: { width: 50, height: 50, borderRadius: 25, backgroundColor: "#F5E6E6", justifyContent: "center", alignItems: "center", marginBottom: 10 },
   suggestionName: { fontSize: 14, fontWeight: "600", color: COLORS.textDark, textAlign: "center", marginBottom: 4 },
@@ -348,14 +348,14 @@ const styles = StyleSheet.create({
   compactBranchCard: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: COLORS.inputBg, marginHorizontal: 20, padding: 15, borderRadius: 12, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   branchName: { fontSize: 15, fontWeight: "700", color: COLORS.textDark, marginBottom: 4 },
   branchDist: { fontSize: 13, color: COLORS.textLight },
-  
+
   branchActions: { flexDirection: "row", alignItems: "center", gap: 10 },
   menuBtn: { backgroundColor: COLORS.accent, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, justifyContent: "center", alignItems: "center" },
   menuBtnText: { color: COLORS.primary, fontWeight: "700", fontSize: 12 },
   goBtn: { backgroundColor: COLORS.primary, width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
 
   qrButton: { position: "absolute", right: 20, bottom: 90, backgroundColor: COLORS.accent, width: 60, height: 60, borderRadius: 30, justifyContent: "center", alignItems: "center", shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 6 },
-  
+
   bottomNav: { position: "absolute", bottom: 0, width: "100%", flexDirection: "row", justifyContent: "space-around", paddingVertical: 12, backgroundColor: COLORS.inputBg, borderTopWidth: 1, borderColor: "#EEE" },
   navItem: { alignItems: "center" },
   navText: { fontSize: 12, marginTop: 4 },
@@ -368,16 +368,16 @@ const styles = StyleSheet.create({
   focusedArea: { width: 250, height: 250, backgroundColor: "transparent" },
   layerRight: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" },
   layerBottom: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", paddingTop: 30 },
-  
+
   // Viewfinder (Odak Izgarası Köşeleri)
   corner: { position: "absolute", width: 40, height: 40, borderColor: COLORS.accent },
   topLeft: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 20 },
   topRight: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 20 },
   bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 20 },
   bottomRight: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 20 },
-  
+
   scanText: { color: "#FFF", fontSize: 16, fontWeight: "600", marginBottom: 40 },
-  
+
   cameraControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: 250 },
   iconButton: { width: 60, height: 60, borderRadius: 30, backgroundColor: "rgba(255,255,255,0.2)", justifyContent: "center", alignItems: "center" },
   closeScannerModern: { width: 70, height: 70, borderRadius: 35, backgroundColor: COLORS.error, justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 },
