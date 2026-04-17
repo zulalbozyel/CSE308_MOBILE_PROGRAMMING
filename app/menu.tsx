@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
-import { useAuth } from "../context/AuthContext";
 import {
   FlatList,
   Modal,
@@ -15,6 +14,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "../context/AuthContext";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const COLORS = {
   primary: "#3E2723",
@@ -24,46 +25,148 @@ const COLORS = {
   textLight: "#757575",
   inputBg: "#FFFFFF",
   error: "#D32F2F",
+  success: "#2E7D32",
 };
 
-const categories = ["Kahveler", "Soğuk İçecekler", "Tatlılar", "Atıştırmalık"];
+const DEFAULT_CATEGORIES = ["Kahveler", "Soğuk İçecekler", "Tatlılar", "Atıştırmalık"];
 
-// Şubelere özel zengin menü veritabanı (6'şar ürün)
-const allProducts: Record<string, any[]> = {
-  "Merkez": [
-    { id: "1", name: "Latte", price: 65, category: "Kahveler", desc: "Taze espresso ve sıcak, ipeksi süt köpüğü" },
-    { id: "2", name: "Americano", price: 55, category: "Kahveler", desc: "Sıcak su ile inceltilmiş yoğun espresso" },
-    { id: "3", name: "Iced Caramel Macchiato", price: 85, category: "Soğuk İçecekler", desc: "Karamel, buz ve espressonun eşsiz uyumu" },
-    { id: "4", name: "Cold Brew", price: 75, category: "Soğuk İçecekler", desc: "12 saat soğuk demlenmiş ferah kahve" },
-    { id: "5", name: "San Sebastian", price: 110, category: "Tatlılar", desc: "İspanyol usulü, içi akışkan yanık cheesecake" },
-    { id: "6", name: "Çikolatalı Cookie", price: 45, category: "Atıştırmalık", desc: "İçi bol Belçika çikolatalı nefis kurabiye" },
-  ],
-  "Kadıköy": [
-    { id: "7", name: "Filtre Kahve", price: 45, category: "Kahveler", desc: "Günün taze demlenmiş yöresel kahvesi" },
-    { id: "8", name: "Cappuccino", price: 65, category: "Kahveler", desc: "Bol ve kalın süt köpüklü klasik espresso" },
-    { id: "9", name: "Çilekli Frappe", price: 90, category: "Soğuk İçecekler", desc: "Buzlu ve taze çilek püreli ferahlatıcı içecek" },
-    { id: "10", name: "Iced Latte", price: 70, category: "Soğuk İçecekler", desc: "Buzlu süt ve taze espresso shot" },
-    { id: "11", name: "Tiramisu", price: 120, category: "Tatlılar", desc: "Mascarpone peynirli ve kahveli İtalyan klasiği" },
-    { id: "12", name: "Kruvasan", price: 50, category: "Atıştırmalık", desc: "Taptaze, tereyağlı çıtır kruvasan" },
-  ],
-};
+// Statik ürün listesi kaldırıldı, veriler sadece API'den çekilecek
+const allProducts: Record<string, any[]> = {};
 
 export default function MenuScreen() {
   const router = useRouter();
-  const { branchName } = useLocalSearchParams();
-  const { session } = useAuth();
+  const { branchName, branchId, tableId, bypassQr } = useLocalSearchParams();
+  const { session, user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [apiProducts, setApiProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
 
   // Aktif Şube State'i
+  const [currentBranchId, setCurrentBranchId] = useState<string | null>((branchId as string) || null);
   const [activeBranch, setActiveBranch] = useState((branchName as string) || "Merkez");
   const [branchModalVisible, setBranchModalVisible] = useState(false);
+  const [branches, setBranches] = useState<any[]>([]);
+
+  // Masa State'leri
+  const [selectedTableId, setSelectedTableId] = useState<string | null>((tableId as string) || null);
+  const [tables, setTables] = useState<any[]>([]);
 
   // Arama ve Kategori
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Kahveler");
 
+  React.useEffect(() => {
+    fetchProducts();
+    fetchBranches();
+  }, []);
+
+  React.useEffect(() => {
+    const manageSession = async () => {
+      // Eğer parametre olarak hiçbir ID yoksa (yani Müşteri alt bardaki Menü tuşuna basıp sayfaya döndüyse)
+      if (!tableId && !branchId) {
+        const savedTableId = await AsyncStorage.getItem('lastTableId');
+        const savedBranchId = await AsyncStorage.getItem('lastBranchId');
+        const savedBranchName = await AsyncStorage.getItem('lastBranchName');
+        
+        if (savedTableId) setSelectedTableId(savedTableId);
+        if (savedBranchId) setCurrentBranchId(savedBranchId);
+        if (savedBranchName) setActiveBranch(savedBranchName);
+      } else {
+        // Eğer param olarak geldiyse (Kameradan taze taze QR okutulmuşsa), bunu cihaz hafızasına kaydet ki menüden çıkarsa da aklında kalsın
+        if (tableId) await AsyncStorage.setItem('lastTableId', tableId as string);
+        if (branchId) await AsyncStorage.setItem('lastBranchId', branchId as string);
+        if (branchName) await AsyncStorage.setItem('lastBranchName', branchName as string);
+      }
+    };
+    manageSession();
+  }, [tableId, branchId]);
+
+  React.useEffect(() => {
+    if (currentBranchId) {
+      fetchTables(currentBranchId);
+    }
+  }, [currentBranchId]);
+
+  const fetchBranches = async () => {
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      const response = await fetch(`${apiUrl}branches?isActive=true`);
+      if (response.ok) {
+        const data = await response.json();
+        setBranches(data);
+      }
+    } catch (e) {
+      console.error("Branches error", e);
+    }
+  };
+
+  const fetchTables = async (bId: string) => {
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      const response = await fetch(`${apiUrl}Tables?branchId=${bId}`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (response.ok) {
+        const rawData = await response.json();
+        const dataArr = Array.isArray(rawData) ? rawData : (rawData.items || rawData.data || []);
+        setTables(dataArr);
+
+        // Sadece validasyonu kontrol et (Büyük-küçük harf eşleşme sorununa karşı toLowerCase)
+        const realTable = selectedTableId ? dataArr.find((t: any) => String(t.id).toLowerCase() === String(selectedTableId).toLowerCase()) : null;
+
+        if (!realTable) {
+          // Geliştirici Ortamı İçin Bypass: Eğer home'dan Menü butonuna tıklandıysa testi hızlandırmak için ilk masayı otomatik ata
+          if (bypassQr === "true" && dataArr.length > 0) {
+            setSelectedTableId(dataArr[0].id);
+          } else {
+            setSelectedTableId(null);
+          }
+        } else {
+          // Eşleşme varsa, state'i doğrudan API'nin geri döndüğü orijinal (küçük-büyük harfli) ID ile düzelt ki uyumsuzluk çıkmasın
+          setSelectedTableId(realTable.id);
+        }
+      }
+    } catch (e) {
+      console.error("Tables error", e);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      const options: any = {
+        headers: { 'Content-Type': 'application/json' }
+      };
+
+      if (session?.access_token) {
+        options.headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      console.log("Fetching products from:", `${apiUrl}products?isAvailable=true`);
+      const response = await fetch(`${apiUrl}products?isAvailable=true`, options);
+      if (response.ok) {
+        const data = await response.json();
+        setApiProducts(data);
+        const uniqueCats = Array.from(new Set(data.map((item: any) => item.categoryName))).filter(Boolean) as string[];
+        if (uniqueCats.length > 0) {
+          setCategories(uniqueCats);
+          setSelectedCategory(uniqueCats[0]);
+        }
+      }
+    } catch (e) {
+      console.error("Products error", e);
+    }
+  };
+
   // Ürünleri Filtreleme Mantığı
-  const currentProducts = allProducts[activeBranch] || allProducts["Merkez"];
+  const currentProducts = apiProducts.map(p => ({
+    id: p.id,
+    name: p.name,
+    price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
+    category: p.categoryName || "Genel",
+    desc: p.description || ""
+  }));
+
   const filteredProducts = currentProducts.filter(p => {
     if (searchQuery.length > 0) {
       // Arama yapılıyorsa kategoriyi boşver, isme göre ara
@@ -93,27 +196,95 @@ export default function MenuScreen() {
   };
 
   const openCustomization = (product: any) => {
+    if (!selectedTableId) {
+      alert("Lütfen sipariş vermek için masanızdaki QR kodu okutun.");
+      return;
+    }
     setSelectedProduct(product);
     setModalVisible(true);
   };
 
   const addToCart = async () => {
+    if (!selectedProduct) return;
     const price = calculatePrice();
     setIsProcessing(true);
 
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+
+      const orderBody: any = {
+        branchId: currentBranchId, 
+        tableId: selectedTableId,
+        customerId: user?.id || null,
+        items: [
+          {
+            productId: selectedProduct.id,
+            quantity: quantity,
+            notes: `${size}, ${milk}, ${sugar}`
+          }
+        ]
+      };
+
+      if (!orderBody.branchId || !orderBody.tableId) {
+        alert("Eksik Bilgi: Lütfen geçerli bir şube ve masa üzerinden sipariş verin. (Masa bulunamadı)");
+        setIsProcessing(false);
+        return;
+      }
+
+      // Eğer elimizde bir tableId varsa ekle (Şu an opsiyonel tutuyoruz)
+      // orderBody.tableId = "UUID_HERE";
+
+      console.log("Sending Order Body:", JSON.stringify(orderBody, null, 2));
+
+      const options: any = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderBody)
+      };
+
+      if (session?.access_token) {
+        options.headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const orderResponse = await fetch(`${apiUrl}orders`, options);
+
+      let parsedOrderId = null;
+      if (orderResponse.ok) {
+        try {
+          const orderResText = await orderResponse.text();
+          // Response text could be raw UUID or JSON
+          try {
+            const orderResJson = JSON.parse(orderResText);
+            parsedOrderId = orderResJson.id || orderResText;
+          } catch {
+            parsedOrderId = orderResText;
+          }
+        } catch { }
+      } else {
+        const errorText = await orderResponse.text();
+        console.warn("API Order Create Error:", errorText);
+        try {
+          const errJSON = JSON.parse(errorText);
+          alert(`Sipariş Oluşturulamadı: ${errJSON.Message || errorText}`);
+        } catch {
+          alert(`Sipariş Oluşturulamadı: ${errorText}`);
+        }
+        setIsProcessing(false);
+        return;
+      }
+
+      // 2. WALLET DEDUCTION
       const response = await fetch(`${apiUrl}wallet/spend-coins`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ amount: price, orderId: null }),
+        body: JSON.stringify({ amount: price, orderId: parsedOrderId || null }),
       });
 
       if (response.ok) {
-        alert(`Siparişiniz alındı! Cüzdanınızdan ${price} TL düşüldü. ☕`);
+        alert(`Siparişiniz başarıyla alındı! Cüzdanınızdan tutar düşüldü. ☕`);
         setCartCount(cartCount + quantity);
         setModalVisible(false);
         // Modal kapanınca ayarları sıfırla
@@ -122,9 +293,16 @@ export default function MenuScreen() {
         setMilk("Tam Yağlı");
         setSugar("Şekersiz");
       } else {
-        alert("Bakiye yetersiz! Lütfen cüzdanınıza para yükleyerek tekrar deneyin.");
+        const walletError = await response.text();
+        try {
+          const wJson = JSON.parse(walletError);
+          alert(`Yetersiz Bakiye veya Ödeme Hatası: ${wJson.Message || walletError}`);
+        } catch {
+          alert(`Ödeme Hatası: ${walletError}`);
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
+      alert(`Sipariş işlemi başarısız: ${error.message || "Bilinmeyen hata"}`);
       console.error("Sipariş ödemesi alınırken hata oluştu:", error);
     } finally {
       setIsProcessing(false);
@@ -137,29 +315,27 @@ export default function MenuScreen() {
 
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={24} color={COLORS.textDark} />
         </TouchableOpacity>
-
-        {/* Şube Seçici (Tıklanabilir) */}
-        <TouchableOpacity style={styles.branchSelector} onPress={() => setBranchModalVisible(true)}>
-          <Text style={styles.logo}>ROASTERY</Text>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <Text style={styles.branch}>{activeBranch.toUpperCase()} ŞUBESİ</Text>
-            <Ionicons name="chevron-down" size={14} color={COLORS.primary} style={{ marginLeft: 4, marginTop: 2 }} />
+        <View style={styles.headerTitleContainer}>
+          <TouchableOpacity onPress={() => setBranchModalVisible(true)} style={styles.branchSelector}>
+            <Text style={styles.headerTitle}>{activeBranch}</Text>
+            <Ionicons name="chevron-down" size={16} color={COLORS.primary} />
+          </TouchableOpacity>
+          <View style={[styles.tableSelector, { backgroundColor: selectedTableId ? COLORS.success : COLORS.error }]}>
+            <Text style={[styles.tableText, { color: '#FFF' }]}>
+              {selectedTableId 
+                ? `Masa Numarası : ${tables.find(t => String(t.id).toLowerCase() === String(selectedTableId).toLowerCase())?.number || tables.find(t => String(t.id).toLowerCase() === String(selectedTableId).toLowerCase())?.name || ""}` 
+                : "Lütfen Masadaki QR Kodu Okutun"}
+            </Text>
+            {!selectedTableId && <Ionicons name="qr-code-outline" size={14} color="#FFF" style={{ marginLeft: 6 }} />}
           </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.cartIconContainer} onPress={() => router.push("/orders")}>
-          <Ionicons name="cart-outline" size={26} color={COLORS.primary} />
-          {cartCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{cartCount}</Text>
-            </View>
-          )}
+        </View>
+        <TouchableOpacity style={styles.cartBtn}>
+          <Ionicons name="search-outline" size={24} color={COLORS.textDark} />
         </TouchableOpacity>
       </View>
-
       {/* SEARCH BAR */}
       <View style={styles.searchContainer}>
         <Ionicons name="search-outline" size={20} color={COLORS.textLight} style={styles.searchIcon} />
@@ -232,19 +408,20 @@ export default function MenuScreen() {
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setBranchModalVisible(false)}>
           <View style={styles.branchModalContent}>
             <Text style={styles.branchModalTitle}>Şube Seçin</Text>
-            {Object.keys(allProducts).map(branch => (
+            {branches.map(branch => (
               <TouchableOpacity
-                key={branch}
-                style={[styles.branchOption, activeBranch === branch && styles.branchOptionActive]}
+                key={branch.id}
+                style={[styles.branchOption, currentBranchId === branch.id && styles.branchOptionActive]}
                 onPress={() => {
-                  setActiveBranch(branch);
+                  setCurrentBranchId(branch.id);
+                  setActiveBranch(branch.name);
                   setBranchModalVisible(false);
                 }}
               >
-                <Text style={[styles.branchOptionText, activeBranch === branch && { color: COLORS.primary, fontWeight: "bold" }]}>
-                  {branch} Şubesi
+                <Text style={[styles.branchOptionText, currentBranchId === branch.id && { color: COLORS.primary, fontWeight: "bold" }]}>
+                  {branch.name}
                 </Text>
-                {activeBranch === branch && <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />}
+                {currentBranchId === branch.id && <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />}
               </TouchableOpacity>
             ))}
           </View>
@@ -348,6 +525,64 @@ const NavItem = ({ icon, label, onPress, active }: any) => (
 );
 
 const styles = StyleSheet.create({
+  headerTitleContainer: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontFamily: 'Outfit-Bold',
+    color: COLORS.textDark,
+  },
+  backBtn: {
+    padding: 8,
+  },
+  cartBtn: {
+    padding: 8,
+  },
+  branchSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tableSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginTop: 2,
+  },
+  tableText: {
+    fontSize: 12,
+    fontFamily: 'Outfit-Medium',
+    color: COLORS.primary,
+  },
+  branchItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  branchItemText: {
+    fontSize: 16,
+    fontFamily: 'Outfit-Medium',
+    color: COLORS.textDark,
+  },
+  closeBtn: {
+    marginTop: 20,
+    backgroundColor: COLORS.primary,
+    padding: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  closeBtnText: {
+    color: '#FFF',
+    fontFamily: 'Outfit-Bold',
+    fontSize: 16,
+  },
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: "row",
@@ -357,14 +592,6 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? 45 : 10,
     backgroundColor: COLORS.background,
   },
-  backButton: { padding: 5 },
-  branchSelector: { alignItems: "center" },
-  logo: { fontSize: 20, fontWeight: "900", color: COLORS.primary, letterSpacing: 1 },
-  branch: { fontSize: 13, color: COLORS.primary, marginTop: 2, fontWeight: "700" },
-  cartIconContainer: { padding: 5, position: "relative" },
-  badge: { position: "absolute", right: -2, top: -2, backgroundColor: COLORS.error, borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: COLORS.background },
-  badgeText: { fontSize: 10, fontWeight: 'bold', color: "#FFF" },
-
   searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.inputBg, marginHorizontal: 20, borderRadius: 12, paddingHorizontal: 15, height: 50, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, marginBottom: 15 },
   searchIcon: { marginRight: 10 },
   searchInput: { flex: 1, fontSize: 15, color: COLORS.textDark },

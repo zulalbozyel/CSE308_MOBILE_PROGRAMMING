@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 import {
   FlatList,
   Platform,
@@ -22,107 +23,144 @@ const COLORS = {
   success: "#2E7D32",
   pending: "#EF6C00",
   blue: "#1976D2",
+  error: "#D32F2F",
 };
-
-// Zenginleştirilmiş Sahte Veri
-const MOCK_ORDERS = [
-  {
-    id: "105",
-    date: "Bugün, 14:30",
-    status: "Hazırlanıyor",
-    branch: "Merkez Şubesi",
-    items: "2x Iced Latte, 1x San Sebastian, 1x Filtre Kahve",
-    totalPrice: 285,
-    isFavorite: false,
-  },
-  {
-    id: "104",
-    date: "Bugün, 09:15",
-    status: "Teslim Edildi",
-    branch: "Kadıköy Şubesi",
-    items: "1x Americano, 2x Çikolatalı Cookie",
-    totalPrice: 145,
-    isFavorite: true, // Sık sipariş ibaresi için
-  },
-  {
-    id: "101",
-    date: "2 Mart 2026, 16:45",
-    status: "Teslim Edildi",
-    branch: "Merkez Şubesi",
-    items: "3x Cold Brew, 1x Tiramisu",
-    totalPrice: 345,
-    isFavorite: false,
-  },
-  {
-    id: "099",
-    date: "28 Şubat 2026, 08:30",
-    status: "Teslim Edildi",
-    branch: "Kadıköy Şubesi",
-    items: "1x Espresso, 1x Kruvasan",
-    totalPrice: 110,
-    isFavorite: true,
-  },
-];
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const { session } = useAuth();
   const [activeTab, setActiveTab] = useState("Aktif"); // "Aktif" veya "Gecmis"
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredOrders = MOCK_ORDERS.filter((order) => {
-    if (activeTab === "Aktif") return order.status === "Hazırlanıyor";
-    return order.status === "Teslim Edildi";
+  useEffect(() => {
+    if (session?.access_token) {
+      fetchOrders();
+    } else {
+      setLoading(false);
+    }
+  }, [session]);
+
+  const fetchOrders = async () => {
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      console.log("Fetching orders from:", `${apiUrl}orders/me`);
+      
+      const options: any = {
+        headers: { 'Content-Type': 'application/json' }
+      };
+      if (session?.access_token) {
+        options.headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const response = await fetch(`${apiUrl}orders/me`, options);
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(Array.isArray(data) ? data : (data.items || []));
+      }
+    } catch (error) {
+      console.error("Siparişler çekilemedi:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancelOrder = async (orderId: string) => {
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      const response = await fetch(`${apiUrl}orders/${orderId}/cancel`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        alert("Siparişiniz başarıyla iptal edildi.");
+        fetchOrders(); // Listeyi yenile
+      } else {
+        alert("Sipariş iptal edilemedi.");
+      }
+    } catch (error) {
+      console.error("İptal işlemi başarısız:", error);
+    }
+  };
+
+  const filteredOrders = orders.filter((order) => {
+    // 0 = Beklemede/Hazırlanıyor, 1 = Tamamlandı, 2 = İptal
+    const isCompletedOrCancelled = order.status === 1 || order.status === 2 || order.status === "İptal Edildi" || order.status === "Teslim Edildi" || order.status === "Completed" || order.status === "Cancelled";
+    if (activeTab === "Aktif") return !isCompletedOrCancelled;
+    return isCompletedOrCancelled;
   });
 
-  const renderOrderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
-      {/* KART BAŞLIĞI */}
-      <View style={styles.cardHeader}>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <View style={styles.iconBox}>
-             <Ionicons name="cafe" size={20} color={COLORS.primary} />
+  const renderOrderItem = ({ item }: { item: any }) => {
+    const isCompleted = item.status === 1 || item.status === "Teslim Edildi" || item.status === "Completed";
+    const isCancelled = item.status === 2 || item.status === "İptal Edildi" || item.status === "İptal" || item.status === "Cancelled";
+    const isPending = !isCompleted && !isCancelled;
+    
+    const displayStatus = isCancelled ? "İptal Edildi" : (isCompleted ? "Tamamlandı" : "Hazırlanıyor");
+    const statusColor = isCancelled ? COLORS.error : (isCompleted ? COLORS.success : COLORS.pending);
+    
+    // Güvenli ID gösterimi ve tarih
+    const safeId = item.id ? String(item.id).substring(0, 8) : "---";
+    const safeDate = item.createdAt || item.orderDate ? new Date(item.createdAt || item.orderDate).toLocaleDateString() : "Bugün";
+    const extractItems = () => {
+      if (item.itemsText) return item.itemsText;
+      
+      const arr = item.items || item.orderItems || item.orderLines || item.products || item.details;
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr.map((i:any) => `${i.quantity||1}x ${i.productName || i.name || i.notes || "Ürün"}`).join(", ");
+      }
+      if (item.notes) return item.notes;
+      // Tüm çabalara rağmen liste çıkartılamazsa kullanıcının istediği sade özeti göster:
+      const pText = typeof item.products === 'object' ? JSON.stringify(item.products) : (item.products || "-");
+      return `Masa: ${item.tableNumber || "?"} • Durum: ${item.status} \nÜrünler: ${pText}`;
+    };
+    const safeItems = extractItems();
+
+    return (
+      <View style={styles.card}>
+        {/* KART BAŞLIĞI */}
+        <View style={styles.cardHeader}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={styles.iconBox}>
+               <Ionicons name="cafe" size={20} color={COLORS.primary} />
+            </View>
+            <View>
+              <Text style={styles.orderId}>Sipariş #{safeId}</Text>
+              <Text style={styles.orderDate}>{safeDate} • {item.branchName || "Şube"}</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.orderId}>Sipariş #{item.id}</Text>
-            <Text style={styles.orderDate}>{item.date} • {item.branch}</Text>
+          
+          <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+            <Text style={styles.statusText}>{displayStatus}</Text>
           </View>
         </View>
-        
-        <View style={[styles.statusBadge, { backgroundColor: item.status === "Hazırlanıyor" ? COLORS.pending : COLORS.success }]}>
-          <Text style={styles.statusText}>{item.status}</Text>
+
+        {/* İÇERİK BİLGİSİ */}
+        <View style={styles.itemsContainer}>
+          <Text style={styles.itemsText}>{safeItems}</Text>
+        </View>
+
+        {/* KART ALTI (Fiyat ve Buton) */}
+        <View style={styles.cardFooter}>
+          <Text style={styles.totalPrice}>{item.totalPrice || item.totalAmount || item.amount || 0} TL</Text>
+          
+          {!isPending ? (
+            <TouchableOpacity style={styles.reorderButton} onPress={() => router.push("/menu")}>
+              <Ionicons name="refresh" size={16} color="#FFF" />
+              <Text style={styles.reorderButtonText}>Yeni Sipariş</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[styles.reorderButton, { backgroundColor: COLORS.error }]} onPress={() => cancelOrder(item.id)}>
+              <Ionicons name="close" size={16} color="#FFF" />
+              <Text style={styles.reorderButtonText}>Siparişi İptal Et</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
-
-      {/* İÇERİK BİLGİSİ */}
-      <View style={styles.itemsContainer}>
-        <Text style={styles.itemsText}>{item.items}</Text>
-      </View>
-
-      {/* FAVORİ İBARESİ (Daha fazla satış için dürtükleme) */}
-      {item.isFavorite && item.status === "Teslim Edildi" && (
-        <View style={styles.favoriteBadge}>
-          <Ionicons name="star" size={14} color={COLORS.accent} />
-          <Text style={styles.favoriteText}>Favori Siparişiniz</Text>
-        </View>
-      )}
-
-      {/* KART ALTI (Fiyat ve Buton) */}
-      <View style={styles.cardFooter}>
-        <Text style={styles.totalPrice}>{item.totalPrice} TL</Text>
-        
-        {item.status === "Teslim Edildi" ? (
-          <TouchableOpacity style={styles.reorderButton} onPress={() => router.push("/menu")}>
-            <Ionicons name="refresh" size={16} color="#FFF" />
-            <Text style={styles.reorderButtonText}>Tekrarlat</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.trackButton}>
-            
-            
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
