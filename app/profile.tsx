@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -16,10 +18,8 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Keyboard,
   View,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 
@@ -37,6 +37,26 @@ export default function Profile() {
   const router = useRouter();
   const { user, session } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [balance, setBalance] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    fetchWallet();
+  }, []);
+
+  const fetchWallet = async () => {
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      const response = await fetch(`${apiUrl}wallet`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setBalance(data.balance);
+      }
+    } catch (e) {
+      console.error("Profile wallet error", e);
+    }
+  };
 
   // Edit Profile States
   const [profileModalVisible, setProfileModalVisible] = useState(false);
@@ -197,18 +217,36 @@ export default function Profile() {
           </View>
         </View>
 
-        {/* SADAKAT PROGRAMI */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Sadakat Programı</Text>
-          <Text style={styles.loyaltyText}>10 kahve alana 1 kahve bedava!</Text>
-          <View style={styles.loyaltyRow}>
-            <TouchableOpacity style={styles.loyaltyButton}>
-              <Ionicons name="star-outline" size={18} color="#fff" />
-              <Text style={styles.loyaltyButtonText}>Puan Kazan</Text>
+        {/* CÜZDANIM VE BAKİYE (Yeni Tasarım) */}
+        <View style={[styles.card, { backgroundColor: COLORS.primary, padding: 20 }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+            <View>
+              <Text style={{ color: COLORS.accent, fontSize: 13, fontWeight: '700', marginBottom: 4 }}>CÜZDAN BAKİYESİ</Text>
+              <Text style={{ fontSize: 32, fontWeight: '900', color: '#FFF' }}>
+                {balance !== null ? `${balance.toLocaleString('tr-TR')} ₺` : "--- ₺"}
+              </Text>
+            </View>
+            <TouchableOpacity 
+              style={{ backgroundColor: 'rgba(255,255,255,0.15)', padding: 12, borderRadius: 15 }}
+              onPress={() => router.push("/home")}
+            >
+              <Ionicons name="add" size={28} color={COLORS.accent} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.loyaltyButton}>
-              <Ionicons name="qr-code-outline" size={18} color="#fff" />
-              <Text style={styles.loyaltyButtonText}>QR Göster</Text>
+          </View>
+          
+          <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.1)', marginVertical: 15 }} />
+          
+          <View style={styles.loyaltyRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#BBB', fontSize: 11, marginBottom: 2 }}>Sadakat Programı</Text>
+              <Text style={{ color: '#FFF', fontSize: 15, fontWeight: '700' }}>10 Alana 1 Bedava</Text>
+            </View>
+            <TouchableOpacity 
+              style={[styles.loyaltyButton, { backgroundColor: COLORS.accent, paddingVertical: 8 }]} 
+              onPress={() => Alert.alert("Bilgi", "QR kodunuz hazırlanıyor...")}
+            >
+              <Ionicons name="qr-code-outline" size={16} color={COLORS.primary} />
+              <Text style={[styles.loyaltyButtonText, { color: COLORS.primary }]}>QR Göster</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -266,7 +304,7 @@ export default function Profile() {
         </View>
 
         {/* MODALLAR */}
-        
+
         {/* PROFİL DÜZENLE MODAL */}
         <Modal
           visible={profileModalVisible}
@@ -274,7 +312,7 @@ export default function Profile() {
           transparent={true}
           onRequestClose={() => setProfileModalVisible(false)}
         >
-          <KeyboardAvoidingView 
+          <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.modalOverlay}
           >
@@ -301,7 +339,7 @@ export default function Profile() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Profil Fotoğrafı</Text>
                   <View style={styles.photoContainer}>
-                    <Image 
+                    <Image
                       source={{ uri: newAvatar || `https://avatar.iran.liara.run/public/boy?username=${newName}` }}
                       style={styles.previewImage}
                     />
@@ -312,8 +350,8 @@ export default function Profile() {
                   </View>
                 </View>
 
-                <TouchableOpacity 
-                  style={[styles.saveButton, (loading || !newName) && { opacity: 0.7 }]} 
+                <TouchableOpacity
+                  style={[styles.saveButton, (loading || !newName) && { opacity: 0.7 }]}
                   onPress={handleUpdateProfile}
                   disabled={loading || !newName}
                 >
@@ -333,7 +371,7 @@ export default function Profile() {
           transparent={true}
           onRequestClose={() => setPasswordModalVisible(false)}
         >
-          <KeyboardAvoidingView 
+          <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.modalOverlay}
           >
@@ -370,8 +408,8 @@ export default function Profile() {
                   />
                 </View>
 
-                <TouchableOpacity 
-                  style={[styles.saveButton, loading && { opacity: 0.7 }]} 
+                <TouchableOpacity
+                  style={[styles.saveButton, loading && { opacity: 0.7 }]}
                   onPress={handleChangePassword}
                   disabled={loading}
                 >

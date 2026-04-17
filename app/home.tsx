@@ -66,12 +66,16 @@ export default function HomeScreen() {
   const fetchWallet = async () => {
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
-      const response = await fetch(`${apiUrl}wallet`, {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      console.log("Fetching Wallet from:", `${apiUrl}wallet`);
+
+      const options: any = {
+        headers: { 'Content-Type': 'application/json' }
+      };
+      if (session?.access_token) {
+        options.headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const response = await fetch(`${apiUrl}wallet`, options);
       if (response.ok) {
         const data = await response.json();
         // Backend'in dönüş formatına göre balance veya amount okuyoruz
@@ -128,6 +132,7 @@ export default function HomeScreen() {
   const fetchBranches = async () => {
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      console.log("Fetching Branches from:", `${apiUrl}branches?isActive=true`);
       const response = await fetch(`${apiUrl}branches?isActive=true`, {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
@@ -151,6 +156,7 @@ export default function HomeScreen() {
   const fetchSuggestions = async () => {
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || "https://cafemanagementapi.baksoftarge.com/api/";
+      console.log("Fetching Suggestions from:", `${apiUrl}products?isAvailable=true`);
       const response = await fetch(`${apiUrl}products?isAvailable=true`, {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
@@ -177,9 +183,35 @@ export default function HomeScreen() {
 
   const handleBarcodeScanned = ({ type, data }: any) => {
     setScanned(true);
-    alert(`QR İçerik: ${data}`);
     setShowScanner(false);
     setTorch(false); // Tarama bitince flaşı kapat
+
+    try {
+      // Masa üzerindeki QR kodun içinde JSON formatında table verileri. 
+      // Sunum Kolaylığı: tableId girilmezse, bypassQr parametresi ile sistem otomatik ilk masayı seçecek!
+      const qrData = JSON.parse(data);
+      // Geriye dönük uyumluluk ve veritabanı birebir formatı için hem qrData.id hem qrData.tableId kontrol edilir:
+      const decodedTableId = qrData.tableId || qrData.id || "";
+      const decodedBranchId = qrData.branchId || "";
+
+      if (decodedBranchId) {
+        alert(decodedTableId ? "Masa Eşleşmesi Başarılı!" : "Şube okundu, masa otomatik atanıyor...");
+        router.push({
+          pathname: "/menu",
+          params: {
+            branchId: decodedBranchId,
+            tableId: decodedTableId,
+            branchName: qrData.branchName || "Şube",
+            bypassQr: decodedTableId ? undefined : "true" // QR'da masa yoksa sunum modu aktif
+          }
+        });
+      } else {
+        alert("Geçersiz QR: Şube ID okunamadı.");
+      }
+    } catch (e: any) {
+      // Eğer okunan şey JSON değilse, düz bir yazı/link ise
+      alert("Hata: Sistemimize ait geçerli bir QR formatı değil.");
+    }
   };
 
   const openMap = (latitude: number, longitude: number, label: string) => {
@@ -336,7 +368,18 @@ export default function HomeScreen() {
       {/* BOTTOM NAVIGATION */}
       <View style={styles.bottomNav}>
         <NavItem icon="home" label="Ana Sayfa" onPress={() => { }} active={true} />
-        <NavItem icon="restaurant-outline" label="Menü" onPress={() => router.push("/menu")} active={false} />
+        <NavItem
+          icon="restaurant-outline"
+          label="Menü"
+          onPress={() => router.push({
+            pathname: "/menu",
+            params: {
+              branchId: branches[0]?.id || "",
+              branchName: branches[0]?.name || "Merkez"
+            }
+          })}
+          active={false}
+        />
         <NavItem icon="receipt-outline" label="Siparişler" onPress={() => router.push("/orders")} active={false} />
         <NavItem icon="person-outline" label="Profil" onPress={() => router.push("/profile")} active={false} />
       </View >
